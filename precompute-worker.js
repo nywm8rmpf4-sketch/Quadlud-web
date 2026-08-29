@@ -9,29 +9,29 @@
 /* v2.25/25.2: pure shared worker path.
    Load only the authoritative logic, rating and generation modules required to
    produce certified candidates. Application orchestration stays on the main thread. */
-importScripts('./game-contract.js?v=3.1.6');
-importScripts('./game-manifest.js?v=3.1.6');
-importScripts('./game-registry.js?v=3.1.6');
-importScripts('./logical-move.js?v=3.1.6');
-importScripts('./queens-logic.js?v=3.1.6');
-importScripts('./difficulty-rating.js?v=3.1.6');
-importScripts('./queens-difficulty.js?v=3.1.6');
-importScripts('./tango-logic.js?v=3.1.6');
-importScripts('./tango-difficulty.js?v=3.1.6');
-importScripts('./sudoku-logic.js?v=3.1.6');
-importScripts('./sudoku-difficulty.js?v=3.1.6');
-importScripts('./patches-logic.js?v=3.1.6');
-importScripts('./patches-difficulty.js?v=3.1.6');
-importScripts('./nonogram-logic.js?v=3.1.6');
-importScripts('./nonogram-validation-solver.js?v=3.1.6');
-importScripts('./nonogram-difficulty.js?v=3.1.6');
-importScripts('./generation-common.js?v=3.1.6');
-importScripts('./queens-qpool4.js?v=3.1.6');
-importScripts('./queens-generator.js?v=3.1.6');
-importScripts('./tango-generator.js?v=3.1.6');
-importScripts('./sudoku-generator.js?v=3.1.6');
-importScripts('./patches-generator.js?v=3.1.6');
-importScripts('./nonogram-generator.js?v=3.1.6');
+importScripts('./game-contract.js?v=3.1.7');
+importScripts('./game-manifest.js?v=3.1.7');
+importScripts('./game-registry.js?v=3.1.7');
+importScripts('./logical-move.js?v=3.1.7');
+importScripts('./queens-logic.js?v=3.1.7');
+importScripts('./difficulty-rating.js?v=3.1.7');
+importScripts('./queens-difficulty.js?v=3.1.7');
+importScripts('./tango-logic.js?v=3.1.7');
+importScripts('./tango-difficulty.js?v=3.1.7');
+importScripts('./sudoku-logic.js?v=3.1.7');
+importScripts('./sudoku-difficulty.js?v=3.1.7');
+importScripts('./patches-logic.js?v=3.1.7');
+importScripts('./patches-difficulty.js?v=3.1.7');
+importScripts('./nonogram-logic.js?v=3.1.7');
+importScripts('./nonogram-validation-solver.js?v=3.1.7');
+importScripts('./nonogram-difficulty.js?v=3.1.7');
+importScripts('./generation-common.js?v=3.1.7');
+importScripts('./queens-qpool4.js?v=3.1.7');
+importScripts('./queens-generator.js?v=3.1.7');
+importScripts('./tango-generator.js?v=3.1.7');
+importScripts('./sudoku-generator.js?v=3.1.7');
+importScripts('./patches-generator.js?v=3.1.7');
+importScripts('./nonogram-generator.js?v=3.1.7');
 
 function __build(game,diff,forbiddenKeys){
   let registry=self.QuadludGameRegistry;if(!registry)throw new Error('QUADLUD game registry unavailable');

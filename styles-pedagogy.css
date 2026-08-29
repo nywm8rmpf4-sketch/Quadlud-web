@@ -19,6 +19,21 @@
   .hint-context{transition:none}
 }
 
+
+/* v3.1.7-B — navigation interne de la preuve du Logic Coach */
+.coach-proof-stage{display:block}
+.coach-proof-navigation{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:12px}
+.coach-proof-arrow{min-width:44px;min-height:44px;padding:7px 13px;font-size:22px;line-height:1}
+.coach-proof-counter{min-width:64px;text-align:center;font-size:13px;font-weight:850;color:var(--muted);font-variant-numeric:tabular-nums}
+.coach-proof-apply{display:block;width:100%;min-height:44px;margin-top:9px}
+@media(max-width:520px){.coach-proof-navigation{gap:7px}.coach-proof-arrow{min-width:48px;min-height:48px}}
+
+/* v3.1.7-C — navigation Tuteur : coup logique vs sous-étape de preuve */
+.walkthrough-proof-navigation{display:flex;align-items:center;justify-content:center;gap:7px;margin:2px 0 10px}
+.walkthrough-proof-arrow{min-width:44px;min-height:44px;padding:6px 12px;font-size:20px;line-height:1}
+.walkthrough-proof-counter{min-width:58px;text-align:center;color:var(--muted);font-size:12px;font-weight:850;font-variant-numeric:tabular-nums}
+@media(max-width:520px){.walkthrough-proof-arrow{min-width:48px;min-height:48px}}
+
 /* v2.13.0 — bibliothèque pédagogique des techniques */
 .coach-technique-title{display:block;font-weight:800;margin-bottom:3px}
 .coach-technique-id{display:inline-block;margin:2px 0 5px;padding:2px 5px;border-radius:5px;background:color-mix(in srgb,var(--muted) 16%,transparent);font-size:11px}

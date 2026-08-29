@@ -19,6 +19,8 @@
   const PROOF_NARRATIVE_KIND='proof-narrative';
   const PROOF_REPLAY_SCHEMA=1;
   const PROOF_REPLAY_KIND='proof-replay';
+  const PEDAGOGY_NAVIGATION_SCHEMA=1;
+  const PEDAGOGY_NAVIGATION_KIND='pedagogy-navigation';
   const DERIVED_FIELDS=Object.freeze(['technique','focus','explanation','action']);
   const FORBIDDEN_EVIDENCE_KEYS=Object.freeze(new Set(['sol','solution','hiddenSolution','solutionGrid','answerGrid','hiddenState','validationState']));
 
@@ -62,6 +64,42 @@
     return value;
   }
   function frozenClone(value){return deepFreeze(cloneJson(value))}
+
+  function normalizePedagogyNavigationIndex(value,path){
+    if(!Number.isInteger(value)||value<0)fail(`${path} must be a non-negative integer`);
+    return value
+  }
+  function definePedagogyNavigation(source={}){
+    if(!isPlainObject(source))fail('pedagogy navigation input must be a plain object');
+    const allowed=new Set(['logicalMoveIndex','proofStepIndex']);
+    for(const key of Object.keys(source))if(!allowed.has(key))fail(`unknown pedagogy navigation field "${key}"`);
+    return deepFreeze({
+      schema:PEDAGOGY_NAVIGATION_SCHEMA,
+      kind:PEDAGOGY_NAVIGATION_KIND,
+      logicalMoveIndex:normalizePedagogyNavigationIndex(source.logicalMoveIndex??0,'logicalMoveIndex'),
+      proofStepIndex:normalizePedagogyNavigationIndex(source.proofStepIndex??0,'proofStepIndex')
+    })
+  }
+  function pedagogyNavigationSource(value){
+    return {logicalMoveIndex:value.logicalMoveIndex,proofStepIndex:value.proofStepIndex}
+  }
+  function assertPedagogyNavigation(value){
+    if(!isPlainObject(value)||value.schema!==PEDAGOGY_NAVIGATION_SCHEMA||value.kind!==PEDAGOGY_NAVIGATION_KIND)fail('pedagogy navigation must come from definePedagogyNavigation()');
+    const normalized=definePedagogyNavigation(pedagogyNavigationSource(value));
+    if(JSON.stringify(normalized)!==JSON.stringify(value))fail('pedagogy navigation contains non-canonical fields');
+    return normalized
+  }
+  function isPedagogyNavigation(value){try{assertPedagogyNavigation(value);return true}catch(_){return false}}
+  function updatePedagogyNavigation(value,patch={}){
+    const current=assertPedagogyNavigation(value);
+    if(!isPlainObject(patch))fail('pedagogy navigation patch must be a plain object');
+    const allowed=new Set(['logicalMoveIndex','proofStepIndex']);
+    for(const key of Object.keys(patch))if(!allowed.has(key))fail(`unknown pedagogy navigation patch field "${key}"`);
+    return definePedagogyNavigation({
+      logicalMoveIndex:Object.prototype.hasOwnProperty.call(patch,'logicalMoveIndex')?patch.logicalMoveIndex:current.logicalMoveIndex,
+      proofStepIndex:Object.prototype.hasOwnProperty.call(patch,'proofStepIndex')?patch.proofStepIndex:current.proofStepIndex
+    })
+  }
 
   function normalizeDeduction(source,path){
     if(!isPlainObject(source))fail(`${path} must be a plain engine deduction object`);
@@ -350,7 +388,9 @@
   return Object.freeze({
     VERSION,EVIDENCE_SCHEMA,PRESENTATION_SCHEMA,EVIDENCE_KIND,DERIVED_FIELDS,
     PROOF_NARRATIVE_SCHEMA,PROOF_NARRATIVE_KIND,PROOF_REPLAY_SCHEMA,PROOF_REPLAY_KIND,
+    PEDAGOGY_NAVIGATION_SCHEMA,PEDAGOGY_NAVIGATION_KIND,
     captureEngineEvidence,defineReasoningPresentation,evidencePathValue,isReasoningPresentation,
-    defineProofNarrative,isProofNarrative,replayProofNarrative
+    defineProofNarrative,isProofNarrative,replayProofNarrative,
+    definePedagogyNavigation,isPedagogyNavigation,updatePedagogyNavigation
   });
 });

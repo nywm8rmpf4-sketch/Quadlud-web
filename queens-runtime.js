@@ -280,23 +280,60 @@ function queenShowLogicalContradiction(w){
   showHintNotice(`<b>⚠ ${tr('contradictionFound')}</b><br>${queenReasoningPresenter().contradictionText(w)}`);return true
 }
 
+function queenCoachNavigationApi(){return globalThis.QuadludReasoningPresentation}
+function queenCoachNormalizeNavigation(flow,total){
+  let api=queenCoachNavigationApi(),legacyIndex=Math.max(0,Math.min(total-1,(Number(flow?.stage)||1)-1)),navigation=api?.isPedagogyNavigation?.(flow?.navigation)?flow.navigation:api?.definePedagogyNavigation?.({logicalMoveIndex:0,proofStepIndex:legacyIndex});
+  if(!navigation)return {schema:1,kind:'pedagogy-navigation',logicalMoveIndex:0,proofStepIndex:legacyIndex};
+  let bounded=Math.max(0,Math.min(total-1,navigation.proofStepIndex));
+  if(bounded!==navigation.proofStepIndex)navigation=api.updatePedagogyNavigation(navigation,{proofStepIndex:bounded});
+  flow.navigation=navigation;flow.stage=navigation.proofStepIndex+1;return navigation
+}
+function queenCoachProofControls(sequence,index){
+  if(!Array.isArray(sequence)||sequence.length<4)return '';
+  let level=tr('walkthroughWhy'),previous=tr('walkthroughPrevious'),next=tr('walkthroughNext'),counter=`${index+1}/${sequence.length}`,scope=a11yAttr(`${tr('logicCoach')} · ${level}`);
+  return `<div class="coach-proof-navigation" role="group" aria-label="${scope}"><button class="btn coach-proof-arrow" id="queenCoachProofPrev" aria-label="${a11yAttr(`${level} · ${previous}`)}" title="${a11yAttr(`${level} · ${previous}`)}" ${index===0?'disabled':''}>‹</button><span class="coach-proof-counter">${counter}</span><button class="btn coach-proof-arrow" id="queenCoachProofNext" aria-label="${a11yAttr(`${level} · ${next}`)}" title="${a11yAttr(`${level} · ${next}`)}" ${index===sequence.length-1?'disabled':''}>›</button></div>${index===sequence.length-1?`<button class="btn primary coach-proof-apply" id="queenCoachProofApply" aria-label="${a11yAttr(`${tr('logicCoach')} · ${tr('continue')}`)}">${tr('continue')}</button>`:''}`
+}
+function queenCoachRecordProofUsage(flow,view,index,total){
+  if(index>=1&&!flow.whyRecorded){coachUsage(2,view.technique);flow.whyRecorded=true}
+  if(index>=total-2&&!flow.revealRecorded){coachUsage(3,view.technique);markHintUsed();updateScoreFlags();flow.revealRecorded=true}
+}
+function queenCoachBindProofControls(){
+  let prev=$('#queenCoachProofPrev'),next=$('#queenCoachProofNext'),apply=$('#queenCoachProofApply');
+  if(prev)prev.onclick=()=>queenCoachNavigateProof(-1);if(next)next.onclick=()=>queenCoachNavigateProof(1);if(apply)apply.onclick=queenCoachApplyProofFlow
+}
+function queenCoachRenderProofFlow(proof,view,sequence,{persist=true,recordUsage=true,focusSelector=null,focusFallback=null,announceNavigation=false}={}){
+  let flow=current?.hintFlow;if(!flow||flow.kind!=='queens-proof'||flow.flowVersion!==5||!Array.isArray(sequence)||sequence.length<4)return false;
+  let navigation=queenCoachNormalizeNavigation(flow,sequence.length),index=navigation.proofStepIndex;if(recordUsage)queenCoachRecordProofUsage(flow,view,index,sequence.length);
+  queenFocusDeduction(proof,false);showHintNotice(`<div class="coach-proof-stage"><span class="coach-progress">${index+1}/${sequence.length}</span>${sequence[index].html}${queenCoachProofControls(sequence,index)}</div>`);queenCoachBindProofControls();if(focusSelector)a11yRestoreFocus(focusSelector,focusFallback);if(announceNavigation)a11yAnnounce(`${tr('logicCoach')} · ${tr('walkthroughWhy')} · ${index+1}/${sequence.length}`);
+  diagnosticRecord('coach.stage',{stage:index+1,technique:view.technique||null});if(persist)saveCurrent();return true
+}
+function queenCoachNavigateProof(delta){
+  let flow=current?.hintFlow;if(!flow||flow.kind!=='queens-proof'||flow.flowVersion!==5)return false;
+  let presenter=queenReasoningPresenter(),proof=flow.deduction,view=presenter.presentation(proof),sequence=presenter.coachSequence?.(proof,view);if(!Array.isArray(sequence)||sequence.length!==flow.total){current.hintFlow=null;showHintNotice(tr('hintError'));return false}
+  let api=queenCoachNavigationApi(),navigation=queenCoachNormalizeNavigation(flow,sequence.length),next=Math.max(0,Math.min(sequence.length-1,navigation.proofStepIndex+Number(delta||0)));if(next===navigation.proofStepIndex)return true;
+  let logicalMoveIndex=navigation.logicalMoveIndex;flow.navigation=api.updatePedagogyNavigation(navigation,{proofStepIndex:next});if(flow.navigation.logicalMoveIndex!==logicalMoveIndex){current.hintFlow=null;showHintNotice(tr('hintError'));return false}
+  flow.stage=next+1;return queenCoachRenderProofFlow(proof,view,sequence,{focusSelector:delta<0?'#queenCoachProofPrev':'#queenCoachProofNext',focusFallback:delta<0?'#queenCoachProofNext':'#queenCoachProofPrev',announceNavigation:true})
+}
+function queenCoachApplyProofFlow(){
+  let flow=current?.hintFlow;if(!flow||flow.kind!=='queens-proof'||flow.flowVersion!==5)return false;
+  let presenter=queenReasoningPresenter(),proof=flow.deduction,view=presenter.presentation(proof),sequence=presenter.coachSequence?.(proof,view);if(!Array.isArray(sequence)||sequence.length!==flow.total){current.hintFlow=null;showHintNotice(tr('hintError'));return false}
+  let navigation=queenCoachNormalizeNavigation(flow,sequence.length);if(navigation.proofStepIndex!==sequence.length-1)return false;
+  queenCoachRecordProofUsage(flow,view,navigation.proofStepIndex,sequence.length);let before=historySnapshotKey();if(!flow.revealRecorded){coachUsage(3,view.technique);markHintUsed();updateScoreFlags();flow.revealRecorded=true}
+  queenFocusDeduction(proof,true);let application=queenApplyDeductionToCurrent(proof);if(!application){current.hintFlow=null;showHintNotice(tr('hintError'));return false}drawGameUi();historyRecord({type:'COACH_APPLY',reasoning:presenter.legacyReasoning(application.deduction,application.automatic),coachStage:sequence.length,coachFlowVersion:5,proofNarrativeSteps:view.proofNarrative?.steps?.length||0},before);current.hintFlow=null;
+  showHintNotice(`<span class="coach-progress">${sequence.length}/${sequence.length}</span>${sequence[sequence.length-1].html}`);maybeAutoFinish();saveCurrent();haptic(12);return true
+}
 function queenCoachHandleDeduction(d){
   let presenter=queenReasoningPresenter(),boardKey=historySnapshotKey(),sig=d.id+'|'+d.rank,flow=current.hintFlow,isSame=flow?.kind==='queens-proof'&&flow.boardKey===boardKey&&flow.signature===sig,view=presenter.presentation(d),sequence=presenter.coachSequence?.(d,view);
   if(Array.isArray(sequence)&&sequence.length>=4){
-    if(!isSame||flow?.flowVersion!==4){
-      current.hintFlow={kind:'queens-proof',boardKey,signature:sig,stage:1,total:sequence.length,flowVersion:4,whyRecorded:false,revealRecorded:false,deduction:JSON.parse(JSON.stringify(d))};
-      coachUsage(1,view.technique);queenFocusDeduction(d,false);showHintNotice(`<span class="coach-progress">1/${sequence.length}</span>${sequence[0].html}`);saveCurrent();return
+    if(!isSame||flow?.flowVersion!==5){
+      let legacyIndex=isSame&&flow?.flowVersion===4?Math.max(0,Math.min(sequence.length-1,(Number(flow.stage)||1)-1)):0,api=queenCoachNavigationApi();
+      current.hintFlow={kind:'queens-proof',boardKey,signature:sig,stage:legacyIndex+1,total:sequence.length,flowVersion:5,whyRecorded:!!flow?.whyRecorded,revealRecorded:!!flow?.revealRecorded,navigation:api.definePedagogyNavigation({logicalMoveIndex:0,proofStepIndex:legacyIndex}),deduction:JSON.parse(JSON.stringify(d))};
+      coachUsage(1,view.technique);return queenCoachRenderProofFlow(d,view,sequence)
     }
-    let proof=flow.deduction||d,proofView=presenter.presentation(proof),proofSequence=presenter.coachSequence?.(proof,proofView);
-    if(!Array.isArray(proofSequence)||proofSequence.length!==flow.total){current.hintFlow=null;showHintNotice(tr('hintError'));return}
-    let next=Math.min((flow.stage||1)+1,proofSequence.length);flow.stage=next;
-    if(next>=2&&!flow.whyRecorded){coachUsage(2,proofView.technique);flow.whyRecorded=true}
-    if(next===proofSequence.length-1&&!flow.revealRecorded){coachUsage(3,proofView.technique);markHintUsed();updateScoreFlags();flow.revealRecorded=true}
-    if(next<proofSequence.length){queenFocusDeduction(proof,false);showHintNotice(`<span class="coach-progress">${next}/${proofSequence.length}</span>${proofSequence[next-1].html}`);saveCurrent();return}
-    let before=historySnapshotKey();if(!flow.revealRecorded){coachUsage(3,proofView.technique);markHintUsed();updateScoreFlags();flow.revealRecorded=true}queenFocusDeduction(proof,true);let application=queenApplyDeductionToCurrent(proof);if(!application){current.hintFlow=null;showHintNotice(tr('hintError'));return}drawGameUi();historyRecord({type:'COACH_APPLY',reasoning:presenter.legacyReasoning(application.deduction,application.automatic),coachStage:proofSequence.length,coachFlowVersion:4,proofNarrativeSteps:proofView.proofNarrative?.steps?.length||0},before);current.hintFlow=null;
-    showHintNotice(`<span class="coach-progress">${proofSequence.length}/${proofSequence.length}</span>${proofSequence[proofSequence.length-1].html}`);maybeAutoFinish();saveCurrent();haptic(12);return
+    let proof=flow.deduction||d,proofView=presenter.presentation(proof),proofSequence=presenter.coachSequence?.(proof,proofView);if(!Array.isArray(proofSequence)||proofSequence.length!==flow.total){current.hintFlow=null;showHintNotice(tr('hintError'));return}
+    queenCoachRenderProofFlow(proof,proofView,proofSequence);return
   }
-  if(!isSame||flow?.flowVersion===4){current.hintFlow={kind:'queens-proof',boardKey,signature:sig,stage:1,flowVersion:3,deduction:JSON.parse(JSON.stringify(d))};coachUsage(1,view.technique);queenFocusDeduction(d,false);showHintNotice(`<span class="coach-progress">1/2</span><b>${tr('where')} :</b> ${view.explanation.where}`);saveCurrent();return}
+  if(!isSame||flow?.flowVersion>=4){current.hintFlow={kind:'queens-proof',boardKey,signature:sig,stage:1,flowVersion:3,deduction:JSON.parse(JSON.stringify(d))};coachUsage(1,view.technique);queenFocusDeduction(d,false);showHintNotice(`<span class="coach-progress">1/2</span><b>${tr('where')} :</b> ${view.explanation.where}`);saveCurrent();return}
   let proof=flow.deduction||d,before=historySnapshotKey();coachUsage(2,view.technique);coachUsage(3,view.technique);markHintUsed();updateScoreFlags();queenFocusDeduction(proof,true);let application=queenApplyDeductionToCurrent(proof);if(!application){current.hintFlow=null;showHintNotice(tr('hintError'));return}drawGameUi();let appliedView=presenter.presentation(application.deduction,application.automatic);historyRecord({type:'COACH_APPLY',reasoning:presenter.legacyReasoning(application.deduction,application.automatic),coachStage:2,coachFlowVersion:3},before);current.hintFlow=null;
   showHintNotice(`<span class="coach-progress">2/2</span><b>${appliedView.explanation.title}</b><br>${appliedView.explanation.why}`);maybeAutoFinish();saveCurrent();haptic(12)
 }

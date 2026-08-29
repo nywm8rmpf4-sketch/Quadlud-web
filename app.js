@@ -5,14 +5,14 @@
  */
 'use strict';
 const $=s=>document.querySelector(s), app=$('#app'), toast=$('#toast'), timerEl=$('#timer');
-const VERSION='3.1.6';
+const VERSION='3.1.7';
 const UI_FEATURES=Object.freeze({inlineRules:false,exploration:false,pause:false,liveTimer:false,unjustifiedHighlights:false,verifyAction:false});
 const WebPlatform=QuadludWebPlatform.getWebPlatform();
 const DiagnosticRecorder=QuadludDiagnosticRecorder;
 const DiagnosticUiStructural=QuadludDiagnosticUiStructural;
 const DiagnosticAttachments=QuadludDiagnosticAttachments;
 const Diagnostic=DiagnosticRecorder.createRecorder({capacity:256,maxErrors:32,uiCapacity:64,nowMs:()=>WebPlatform.clock.nowMs(),nowIso:()=>WebPlatform.clock.nowIso()});
-const DIAGNOSTIC_BUILD='v3.1.6-proof-narrative';
+const DIAGNOSTIC_BUILD='v3.1.7-two-level-pedagogy-navigation';
 const DIAGNOSTIC_UI_EVENT_TYPES=new Set(['action.applied','action.not-applied','history.undo','history.redo','history.branch','session.reset','coach.stage','tutor.open','tutor.next','tutor.previous','tutor.restart','tutor.close','ui.tool-change','viewport.resize','viewport.orientation']);
 function diagnosticOrientation(){try{return String(screen?.orientation?.type||((innerWidth||0)>=(innerHeight||0)?'landscape':'portrait'))}catch(_){return 'unknown'}}
 function diagnosticEnvironment(){return {lang:lang(),theme:resolvedTheme(),viewport:{width:Math.max(0,Number(innerWidth)||0),height:Math.max(0,Number(innerHeight)||0)},dpr:Math.max(0,Number(devicePixelRatio)||1),orientation:diagnosticOrientation(),userAgent:String(navigator?.userAgent||'')}}
@@ -72,6 +72,9 @@ function a11ySkipLabel(){return A11Y_SKIP_LABELS[lang()]||A11Y_SKIP_LABELS.en}
 function a11yAttr(x){return String(x??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function a11yCoord(r,c){return `${tr('rowLabel')} ${r+1}, ${tr('columnLabel')} ${c+1}`}
 function a11yAnnounce(text){let live=$('#a11yLive');if(!live||!text)return;live.textContent='';requestAnimationFrame(()=>{live.textContent=String(text)})}
+function a11yRestoreFocus(preferred,fallback=null){
+  requestAnimationFrame(()=>{let pick=s=>typeof s==='string'?$(s):s,first=pick(preferred),second=pick(fallback),target=first&&!first.disabled?first:second&&!second.disabled?second:null;if(!target)return;target.focus({preventScroll:true});target.scrollIntoView({block:'nearest',inline:'nearest'})})
+}
 function a11yCellFlags(el){
   if(!el)return;
   let invalid=el.classList.contains('illegal')||el.classList.contains('error')||el.classList.contains('error-focus');
@@ -1317,7 +1320,7 @@ function historyRecord(action='MOVE',beforeKey=null){
 }
 function restorePuzzleSnapshot(s){
   if(!current||!s||s.game!==current.game)return false;
-  current.hintFlow=null;current.lastReasoning=null;current.lastError=null;current.lastMoveAudit=null;current.masteryPendingAid=null;clearHintFocus();clearErrorFocus();closeHintNotice();$('#victory')?.remove();
+  current.hintFlow=null;current.walkthroughResume=null;current.lastReasoning=null;current.lastError=null;current.lastMoveAudit=null;current.masteryPendingAid=null;clearHintFocus();clearErrorFocus();closeHintNotice();$('#victory')?.remove();
   if(!SessionHistory.applyPuzzleSnapshot(current,s))return false;
   drawGameUi(current);
   status('',true);updateScoreFlags();return true
@@ -1387,7 +1390,7 @@ function persistencePayloadValid(x){
   let fingerprint=persistenceFingerprint(c);if((x.puzzleFingerprint||null)!==(fingerprint||null)||!persistenceCertifiedProfileValid(c,fingerprint))return false;
   return Number.isFinite(Number(x.elapsed))&&Number(x.elapsed)>=0&&typeof x.paused==='boolean'
 }
-function saveCurrent(){if(!current||current.completed||current.trainingCompleted)return;try{let c=plainCurrent();if(!persistenceHistoryValid(c))return;let fingerprint=persistenceFingerprint(c);if(!persistenceCertifiedProfileValid(c,fingerprint))return;let payload=DataSerialization.createSaveEnvelope({schema:SAVE_SCHEMA,baseline:PERSISTENCE_BASELINE,version:VERSION,contract:persistenceContract(),puzzleFingerprint:fingerprint,current:c,elapsed:timerSeconds(),paused:!!paused,savedAt:WebPlatform.clock.nowMs()});PersistentData.save.write(payload)}catch(_){}}
+function saveCurrent(){if(!current||current.completed||current.trainingCompleted)return;try{walkthroughSanitizeResumeForCurrent();let c=plainCurrent();if(!persistenceHistoryValid(c))return;let fingerprint=persistenceFingerprint(c);if(!persistenceCertifiedProfileValid(c,fingerprint))return;let payload=DataSerialization.createSaveEnvelope({schema:SAVE_SCHEMA,baseline:PERSISTENCE_BASELINE,version:VERSION,contract:persistenceContract(),puzzleFingerprint:fingerprint,current:c,elapsed:timerSeconds(),paused:!!paused,savedAt:WebPlatform.clock.nowMs()});PersistentData.save.write(payload)}catch(_){}}
 function getSaved(){return PersistentData.save.read({validate:persistencePayloadValid})}
 function clearSaved(){PersistentData.save.clear()}
 
@@ -1498,7 +1501,70 @@ function walkthroughComplete(){return withWalkthroughCurrent(c=>!!c&&gamePedagog
 
 
 
-function walkthroughGenerateNext(){let s=walkthroughSession;if(!s||s.done||s.stalled)return false;return gamePedagogy(s.base.game).walkthrough.generateNext(s)}
+// v3.1.7-D1 — persistent Tutor cursor, anchored to the exact visible/history state.
+function walkthroughNavigationApi(){return globalThis.QuadludReasoningPresentation}
+function walkthroughResumeAnchor(){
+  if(!current)return null;try{return `${String(current.moveHistory?.cursor||'')}|${historySnapshotKey()}`}catch(_){return null}
+}
+function walkthroughStoredResume(){
+  let r=current?.walkthroughResume,api=walkthroughNavigationApi(),anchor=walkthroughResumeAnchor();
+  if(!r||r.schema!==1||r.game!==current?.game||r.anchor!==anchor||typeof r.atStart!=='boolean'||!api?.isPedagogyNavigation?.(r.navigation))return null;
+  return {schema:1,game:r.game,anchor:r.anchor,atStart:r.atStart,navigation:JSON.parse(JSON.stringify(r.navigation))}
+}
+function walkthroughSanitizeResumeForCurrent(){
+  if(!current?.walkthroughResume)return false;let r=current.walkthroughResume,api=walkthroughNavigationApi(),anchor=walkthroughResumeAnchor();
+  if(r.schema!==1||r.game!==current.game||r.anchor!==anchor||typeof r.atStart!=='boolean'||!api?.isPedagogyNavigation?.(r.navigation)){current.walkthroughResume=null;return true}return false
+}
+function walkthroughPersistResume(){
+  let s=walkthroughSession,api=walkthroughNavigationApi(),anchor=walkthroughResumeAnchor();if(!current||!s||!anchor)return false;
+  let atStart=!!s.atStart||s.index===0,nav=atStart?api.definePedagogyNavigation({logicalMoveIndex:0,proofStepIndex:0}):s.navigation;
+  if(!api?.isPedagogyNavigation?.(nav))return false;
+  current.walkthroughResume={schema:1,game:current.game,anchor,atStart,navigation:JSON.parse(JSON.stringify(nav))};saveCurrent();return true
+}
+function walkthroughRestoreResume(resume){
+  let s=walkthroughSession,api=walkthroughNavigationApi();if(!s||!resume||!api?.isPedagogyNavigation?.(resume.navigation))return false;if(resume.atStart)return walkthroughSetStart();
+  let logical=resume.navigation.logicalMoveIndex,guard=0;
+  while(!walkthroughGroups(s).some(x=>x.logicalMoveIndex===logical)&&!s.done&&!s.stalled&&guard++<512){if(!walkthroughGenerateNext())break}
+  return walkthroughSetPosition(logical,resume.navigation.proofStepIndex)
+}
+function walkthroughGroups(session=walkthroughSession){
+  let s=session;if(!s)return [];let groups=[],navigation=Array.isArray(s.pedagogyNavigationByMove)?s.pedagogyNavigationByMove:[];
+  for(let flat=0;flat<s.moves.length;flat++){
+    let move=s.moves[flat],nav=navigation[flat],logical=Number.isInteger(nav?.logicalMoveIndex)?nav.logicalMoveIndex:flat,group=groups.find(x=>x.logicalMoveIndex===logical);
+    if(!group){group={logicalMoveIndex:logical,entries:[]};groups.push(group)}group.entries.push({flat,move,navigation:nav||null})
+  }
+  groups.sort((a,b)=>a.logicalMoveIndex-b.logicalMoveIndex);return groups
+}
+function walkthroughAnnotateNewMoves(s,start){
+  let added=s.moves.slice(start);if(!added.length)return false;let api=walkthroughNavigationApi();if(!Array.isArray(s.pedagogyNavigationByMove))s.pedagogyNavigationByMove=[];
+  let existing=s.pedagogyNavigationByMove.slice(0,start).map(nav=>nav?.logicalMoveIndex).filter(Number.isInteger),logicalIndex=existing.length?Math.max(...existing)+1:0;
+  added.forEach((_move,proofStepIndex)=>{s.pedagogyNavigationByMove[start+proofStepIndex]=api.definePedagogyNavigation({logicalMoveIndex:logicalIndex,proofStepIndex})});return true
+}
+function walkthroughGenerateNext(){
+  let s=walkthroughSession;if(!s||s.done||s.stalled)return false;let start=s.moves.length,ok=gamePedagogy(s.base.game).walkthrough.generateNext(s);if(ok)walkthroughAnnotateNewMoves(s,start);return ok
+}
+function walkthroughSetStart(){
+  let s=walkthroughSession,api=walkthroughNavigationApi();if(!s)return false;s.atStart=true;s.index=0;s.navigation=api.definePedagogyNavigation({logicalMoveIndex:0,proofStepIndex:0});return true
+}
+function walkthroughSetPosition(logicalMoveIndex,proofStepIndex=0){
+  let s=walkthroughSession,api=walkthroughNavigationApi(),group=walkthroughGroups(s).find(x=>x.logicalMoveIndex===logicalMoveIndex);if(!s||!group||!group.entries.length)return false;
+  let proof=Math.max(0,Math.min(group.entries.length-1,Number(proofStepIndex)||0)),entry=group.entries[proof];s.navigation=api.definePedagogyNavigation({logicalMoveIndex,proofStepIndex:proof});s.atStart=false;s.index=entry.flat+1;return true
+}
+function walkthroughCurrentGroup(){let s=walkthroughSession;if(!s||s.atStart||s.index===0)return null;let nav=s.navigation||s.pedagogyNavigationByMove?.[s.index-1];if(!nav)return null;return walkthroughGroups(s).find(x=>x.logicalMoveIndex===nav.logicalMoveIndex)||null}
+function walkthroughProofControls(){
+  let s=walkthroughSession,group=walkthroughCurrentGroup(),nav=s?.navigation;if(!s||!group||group.entries.length<=1||!nav)return '';
+  let level=tr('walkthroughWhy'),previous=tr('walkthroughPrevious'),next=tr('walkthroughNext'),i=nav.proofStepIndex,scope=a11yAttr(`${tr('walkthrough')} · ${level}`);
+  return `<div class="walkthrough-proof-navigation" role="group" aria-label="${scope}"><button class="btn walkthrough-proof-arrow" id="walkthroughProofPrev" aria-label="${a11yAttr(`${level} · ${previous}`)}" title="${a11yAttr(`${level} · ${previous}`)}" ${i===0?'disabled':''}>‹</button><span class="walkthrough-proof-counter">${i+1}/${group.entries.length}</span><button class="btn walkthrough-proof-arrow" id="walkthroughProofNext" aria-label="${a11yAttr(`${level} · ${next}`)}" title="${a11yAttr(`${level} · ${next}`)}" ${i===group.entries.length-1?'disabled':''}>›</button></div>`
+}
+function walkthroughA11yAnnouncement(level='logical'){
+  let s=walkthroughSession;if(!s)return '';let nav=s.navigation,group=walkthroughCurrentGroup(),groups=walkthroughGroups(s);
+  if(level==='proof'&&group&&nav)return `${tr('walkthrough')} · ${tr('walkthroughWhy')} · ${nav.proofStepIndex+1}/${group.entries.length}`;
+  let position=s.atStart||s.index===0?0:(nav?.logicalMoveIndex??0)+1,total=s.done?groups.length:'…';return `${tr('walkthrough')} · ${tr('hintMove')} · ${position}/${total}`
+}
+function walkthroughNavigateProof(delta){
+  let s=walkthroughSession,group=walkthroughCurrentGroup(),nav=s?.navigation;if(!s||!group||!nav)return false;let logical=nav.logicalMoveIndex,next=Math.max(0,Math.min(group.entries.length-1,nav.proofStepIndex+Number(delta||0)));if(next===nav.proofStepIndex)return true;
+  if(!walkthroughSetPosition(logical,next))return false;diagnosticRecord(delta<0?'tutor.previous':'tutor.next',{index:s.index,moves:s.moves.length});renderWalkthrough({animatePlacement:delta>0,focusSelector:delta<0?'#walkthroughProofPrev':'#walkthroughProofNext',focusFallback:delta<0?'#walkthroughProofNext':'#walkthroughProofPrev',announceNavigation:'proof'});return true
+}
 function walkthroughTarget(index){return index>0?walkthroughSession?.moves?.[index-1]?.target:null}
 function walkthroughBoardHtml(snapshot,target=null,deduction=null,options={}){
   let s=walkthroughSession,c=s.base,n=c.n||6,view=gamePedagogy(c.game).walkthrough.board({base:c,initial:s.initial,snapshot,target,deduction,previousSnapshot:options.previousSnapshot||null,animatePlacement:options.animatePlacement===true})||{},boardClass=view.boardClass?`${view.boardClass} `:'';
@@ -1518,25 +1584,31 @@ function a11ySyncWalkthroughBoard(){
   cells.forEach((d,i)=>{let r=Math.floor(i/n),c=i%n,parts=[a11yCoord(r,c)],txt=(d.textContent||'').trim();if(txt)parts.push(txt);a11ySetCell(d,r,c,parts.join(', '),{readonly:true})});
 }
 function renderWalkthrough(options={}){
-  let s=walkthroughSession;if(!s)return;let i=s.index,snap=i===0?s.initial:s.moves[i-1].snapshot,target=walkthroughTarget(i),deduction=i>0?s.moves[i-1]?.deduction:null,previousSnapshot=i>0?(i===1?s.initial:s.moves[i-2]?.snapshot||null):null,animatePlacement=options.animatePlacement===true;
-  let contradiction=s.logicContradiction?(gamePedagogy(s.base.game).walkthrough.contradictionText(s.logicContradiction)||tr('walkthroughStalled')):tr('walkthroughStalled'),stateNote=s.done&&i===s.moves.length?`<div class="walkthrough-complete">✓ ${tr('walkthroughComplete')}</div>`:s.stalled&&i===s.moves.length?`<div class="walkthrough-stalled">⚠ ${contradiction}</div>`:'';
-  let total=s.done?s.moves.length:'…',progress=`${i}/${total}`;document.body.classList.add('tutor-active');
-  app.innerHTML=`<section class="panel walkthrough-panel"><div class="stats-head walkthrough-head"><div><h1>${tr('walkthrough')}</h1><p>${gameLabel(s.base.game)} · ${DIFF[s.base.diff]}</p></div><button class="btn" id="walkthroughClose">${tr('walkthroughClose')}</button></div>${walkthroughBoardHtml(snap,target,deduction,{previousSnapshot,animatePlacement})}<div class="walkthrough-actions walkthrough-actions-top"><button class="btn" id="walkthroughPrev" ${i===0?'disabled':''}>← ${tr('walkthroughPrevious')}</button><button class="btn walkthrough-step-counter" id="walkthroughRestart" ${i===0?'disabled':''} title="${tr('walkthroughRestart')}">${tr('walkthroughStep')} ${progress} · ↺</button><button class="btn primary" id="walkthroughNext" ${(s.done||s.stalled)&&i===s.moves.length?'disabled':''}>${tr('walkthroughNext')} →</button></div><div class="walkthrough-scroll" aria-live="polite" aria-atomic="false"><p class="walkthrough-help-note">💡 ${tr('walkthroughCountsAsHelp')}</p>${walkthroughExplanationHtml(i)}${stateNote}</div></section>`;
-  a11ySyncWalkthroughBoard();
-  gamePedagogy(s.base.game).walkthrough.afterRender(app.querySelector('.walkthrough-board'),s.base);
-  $('#walkthroughClose').onclick=closeWalkthrough;$('#walkthroughPrev').onclick=()=>{if(s.index>0){s.index--;diagnosticRecord('tutor.previous',{index:s.index,moves:s.moves.length});renderWalkthrough()}};$('#walkthroughRestart').onclick=()=>{s.index=0;diagnosticRecord('tutor.restart',{index:s.index,moves:s.moves.length});renderWalkthrough()};$('#walkthroughNext').onclick=()=>{if(s.index<s.moves.length)s.index++;else if(walkthroughGenerateNext())s.index++;diagnosticRecord('tutor.next',{index:s.index,moves:s.moves.length});renderWalkthrough({animatePlacement:true})};app.querySelectorAll('button').forEach(pressFeedback)
+  let s=walkthroughSession;if(!s)return;let atStart=!!s.atStart||s.index===0,i=atStart?0:s.index,snap=atStart?s.initial:s.moves[i-1].snapshot,target=walkthroughTarget(i),deduction=i>0?s.moves[i-1]?.deduction:null,previousSnapshot=i>0?(i===1?s.initial:s.moves[i-2]?.snapshot||null):null,animatePlacement=options.animatePlacement===true;
+  let groups=walkthroughGroups(s),group=walkthroughCurrentGroup(),nav=s.navigation||walkthroughNavigationApi().definePedagogyNavigation({logicalMoveIndex:0,proofStepIndex:0}),logicalIndex=atStart?-1:nav.logicalMoveIndex,proofIndex=atStart?0:nav.proofStepIndex,lastLogical=groups.length?groups.at(-1).logicalMoveIndex:-1,lastProof=group?group.entries.length-1:0;
+  let contradiction=s.logicContradiction?(gamePedagogy(s.base.game).walkthrough.contradictionText(s.logicContradiction)||tr('walkthroughStalled')):tr('walkthroughStalled'),atLastStage=!atStart&&logicalIndex===lastLogical&&proofIndex===lastProof,stateNote=s.done&&atLastStage?`<div class="walkthrough-complete">✓ ${tr('walkthroughComplete')}</div>`:s.stalled&&atLastStage?`<div class="walkthrough-stalled">⚠ ${contradiction}</div>`:'';
+  let total=s.done?groups.length:'…',progress=`${atStart?0:logicalIndex+1}/${total}`,nextDisabled=!atStart&&(s.done||s.stalled)&&logicalIndex===lastLogical;document.body.classList.add('tutor-active');
+  app.innerHTML=`<section class="panel walkthrough-panel"><div class="stats-head walkthrough-head"><div><h1>${tr('walkthrough')}</h1><p>${gameLabel(s.base.game)} · ${DIFF[s.base.diff]}</p></div><button class="btn" id="walkthroughClose">${tr('walkthroughClose')}</button></div>${walkthroughBoardHtml(snap,target,deduction,{previousSnapshot,animatePlacement})}<div class="walkthrough-actions walkthrough-actions-top" role="group" aria-label="${a11yAttr(`${tr('walkthrough')} · ${tr('hintMove')}`)}"><button class="btn" id="walkthroughPrev" aria-label="${a11yAttr(`${tr('hintMove')} · ${tr('walkthroughPrevious')}`)}" ${atStart?'disabled':''}>← ${tr('walkthroughPrevious')}</button><button class="btn walkthrough-step-counter" id="walkthroughRestart" aria-label="${a11yAttr(`${tr('hintMove')} · ${tr('walkthroughRestart')}`)}" ${atStart?'disabled':''} title="${tr('walkthroughRestart')}">${tr('walkthroughStep')} ${progress} · ↺</button><button class="btn primary" id="walkthroughNext" aria-label="${a11yAttr(`${tr('hintMove')} · ${tr('walkthroughNext')}`)}" ${nextDisabled?'disabled':''}>${tr('walkthroughNext')} →</button></div><div class="walkthrough-scroll" aria-live="polite" aria-atomic="false"><p class="walkthrough-help-note">💡 ${tr('walkthroughCountsAsHelp')}</p>${walkthroughProofControls()}${walkthroughExplanationHtml(i)}${stateNote}</div></section>`;
+  a11ySyncWalkthroughBoard();gamePedagogy(s.base.game).walkthrough.afterRender(app.querySelector('.walkthrough-board'),s.base);
+  $('#walkthroughClose').onclick=closeWalkthrough;
+  $('#walkthroughPrev').onclick=()=>{let nav=s.navigation;if(s.atStart||s.index===0)return;if(nav?.logicalMoveIndex>0)walkthroughSetPosition(nav.logicalMoveIndex-1,0);else walkthroughSetStart();diagnosticRecord('tutor.previous',{index:s.index,moves:s.moves.length});renderWalkthrough({focusSelector:'#walkthroughPrev',focusFallback:'#walkthroughNext',announceNavigation:'logical'})};
+  $('#walkthroughRestart').onclick=()=>{walkthroughSetStart();diagnosticRecord('tutor.restart',{index:s.index,moves:s.moves.length});renderWalkthrough({focusSelector:'#walkthroughNext',focusFallback:'#walkthroughClose',announceNavigation:'logical'})};
+  $('#walkthroughNext').onclick=()=>{let groups=walkthroughGroups(s),targetLogical=s.atStart||s.index===0?0:(s.navigation?.logicalMoveIndex??0)+1;if(targetLogical>=groups.length){if(!walkthroughGenerateNext()){diagnosticRecord('tutor.next',{index:s.index,moves:s.moves.length});renderWalkthrough({focusSelector:'#walkthroughNext',focusFallback:'#walkthroughPrev',announceNavigation:'logical'});return}groups=walkthroughGroups(s)}if(targetLogical<groups.length)walkthroughSetPosition(targetLogical,0);diagnosticRecord('tutor.next',{index:s.index,moves:s.moves.length});renderWalkthrough({animatePlacement:true,focusSelector:'#walkthroughNext',focusFallback:'#walkthroughPrev',announceNavigation:'logical'})};
+  let pp=$('#walkthroughProofPrev'),pn=$('#walkthroughProofNext');if(pp)pp.onclick=()=>walkthroughNavigateProof(-1);if(pn)pn.onclick=()=>walkthroughNavigateProof(1);app.querySelectorAll('button').forEach(pressFeedback);walkthroughPersistResume();if(options.focusSelector)a11yRestoreFocus(options.focusSelector,options.focusFallback);if(options.announceNavigation)a11yAnnounce(walkthroughA11yAnnouncement(options.announceNavigation))
 }
+
 function openWalkthrough(){
-  if(!current||current.training)return false;let root=walkthroughRootSnapshot(),work=walkthroughVisibleClone(current,root);if(!work)return false;
+  if(!current||current.training)return false;let resume=walkthroughStoredResume(),root=walkthroughRootSnapshot(),work=walkthroughVisibleClone(current,root);if(!work)return false;
   let elapsed=timerSeconds(),wasPaused=paused;stopTimer(true);current.walkthroughUsed=true;markHintUsed();updateScoreFlags();saveCurrent();
-  walkthroughSession={schema:2,base:work,work,initial:walkthroughSnapshot(work),moves:[],index:0,done:false,stalled:false,elapsed,wasPaused};
+  walkthroughSession={schema:3,base:work,work,initial:walkthroughSnapshot(work),moves:[],pedagogyNavigationByMove:[],index:0,atStart:true,navigation:walkthroughNavigationApi().definePedagogyNavigation({logicalMoveIndex:0,proofStepIndex:0}),done:false,stalled:false,elapsed,wasPaused};
   gamePedagogy(work.game).walkthrough.initialize(walkthroughSession);
-  diagnosticRecord('tutor.open',{index:0,moves:0});renderWalkthrough();return true
+  if(resume&&!walkthroughRestoreResume(resume)){current.walkthroughResume=null;walkthroughSetStart()}
+  diagnosticRecord('tutor.open',{index:walkthroughSession.index,moves:walkthroughSession.moves.length,navigation:walkthroughSession.navigation});renderWalkthrough();return true
 }
 function closeWalkthrough(){
-  let s=walkthroughSession;if(!s||!current)return false;let elapsed=s.elapsed,wasPaused=s.wasPaused;walkthroughSession=null;document.body.classList.remove('tutor-active');
+  let s=walkthroughSession;if(!s||!current)return false;walkthroughPersistResume();let elapsed=s.elapsed,wasPaused=s.wasPaused;walkthroughSession=null;document.body.classList.remove('tutor-active');
   renderGameUi(current);
-  diagnosticRecord('tutor.close',{index:s.index,moves:s.moves.length});startTimer(true,elapsed,wasPaused);updatePauseButton();saveCurrent();return true
+  diagnosticRecord('tutor.close',{index:s.index,moves:s.moves.length,navigation:s.navigation});startTimer(true,elapsed,wasPaused);updatePauseButton();saveCurrent();return true
 }
 
 function shell(name,subtitle,diff,content,rules){let challengeTag=current?.challenge?` · <span class="challenge-shell-tag">↗ <b>${current.challengeCode}</b></span>`:'';let trainingTag=current?.learning?` · <span class="training-shell-tag">${tr('lesson')} ${current.learningPhase}/4 : <b>${techniqueTitle(current.learningTechnique)}</b></span>`:current?.training?` · <span class="training-shell-tag">${tr('trainingTarget')} : <b>${techniqueTitle(current.trainingTechnique)}</b></span>`:'';app.innerHTML=`<section class="panel"><div class="game-head"><div><h1>${name}</h1><p>${subtitle}${trainingTag}${challengeTag}${current?` · <span class="live-aids">${aidBadges(current,true)}</span>`:''}</p></div><select class="difficulty" id="difficulty" aria-label="${tr('difficulty')}">${Object.entries(DIFF).map(([k,v])=>`<option value="${k}" ${k===diff?'selected':''}>${v}</option>`).join('')}</select></div><div class="toolbar" role="group" aria-label="${tr('actions')}"><button class="btn primary" id="newBtn">${tr('newGame')}</button><button class="btn" id="resetBtn">${tr('reset')}</button><button class="btn history-action" id="undoBtn" title="${tr('undo')}" aria-label="${tr('undo')}">↶ ${tr('undo')}</button><button class="btn history-action" id="redoBtn" title="${tr('redo')}" aria-label="${tr('redo')}">↷ ${tr('redo')}</button>${UI_FEATURES.pause?`<button class="btn" id="pauseBtn">${tr('pause')}</button>`:''}${(UI_FEATURES.verifyAction||current?.training||current?.learning)?`<button class="btn" id="checkBtn">${tr('check')}</button>`:''}<button class="btn" id="hintBtn">${tr('logicCoach')}</button>${UI_FEATURES.exploration?`<button class="btn" id="exploreBtn">◇ ${tr('exploration')}</button>`:''}<button class="btn secondary-action" id="shareChallengeBtn" style="${current?.challenge?'':'display:none'}">↗ ${tr('shareChallenge')}</button><button class="btn tutor-action" id="walkthroughBtn">▹ ${tr('walkthrough')}</button><button class="btn secondary-action" id="solutionBtn">${tr('solution')}</button><button class="btn secondary-action" id="rulesBtn">${tr('rules')}</button><button class="btn secondary-action" id="techniquesBtn">${tr('techniques')}</button></div><div id="status" class="status" aria-live="polite"></div><div id="errorCoach" class="error-coach" hidden aria-live="polite"></div><div id="reasoningAudit" class="reasoning-audit" hidden aria-live="polite"></div>${UI_FEATURES.exploration?`<div id="explorationPanel" class="exploration-panel" hidden aria-live="polite"></div>`:''}<div id="learningGuide" class="learning-guide" hidden aria-live="polite"></div>${content}${UI_FEATURES.inlineRules?`<div class="rules">${rules}</div>`:''}</section>`;
@@ -1546,7 +1618,7 @@ function resetCurrent(){
   if(!current)return;
   if(current.training)return resetTrainingExercise();
   let hadProgress=SessionHistory.hasPuzzleProgress(current);if(hadProgress)markBacktrack();
-  $('#victory')?.remove();closeHintNotice();clearHintFocus();current.hintFlow=null;current.lastError=null;current.lastMoveAudit=null;current.exploration=null;clearErrorFocus();
+  $('#victory')?.remove();closeHintNotice();clearHintFocus();current.hintFlow=null;current.walkthroughResume=null;current.lastError=null;current.lastMoveAudit=null;current.exploration=null;clearErrorFocus();
   if(!SessionHistory.resetPuzzleState(current))return;
   if(!resetGameUi(current))return;
   let wasCompleted=!!current.completed;
