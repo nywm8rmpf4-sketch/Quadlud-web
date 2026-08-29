@@ -1,0 +1,39 @@
+/* v2.22.0 — accessibilité clavier, focus, zoom et modes de contraste */
+:root{--focus:#005fcc;--focus-bg:#fff}
+:root[data-theme="dark"]{--focus:#9bd1ff;--focus-bg:#171916}
+html{scroll-padding-top:82px;scroll-padding-bottom:110px}
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.skip-link{position:fixed;z-index:1000;inset-inline-start:12px;top:8px;transform:translateY(-160%);background:var(--ink);color:var(--paper);border-radius:10px;padding:10px 14px;font-weight:800;text-decoration:none;box-shadow:var(--shadow)}
+.skip-link:focus{transform:translateY(0)}
+:where(button,select,a,[tabindex]:not([tabindex="-1"])):focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.board .cell[tabindex]:focus-visible{outline:3px solid var(--focus)!important;outline-offset:-4px;z-index:12}
+.cell[tabindex]{scroll-margin-block:92px 118px}
+.modal[role="dialog"],.victory[role="dialog"]{overscroll-behavior:contain}
+.sheet[tabindex="-1"],.victory-card[tabindex="-1"]{outline:none}
+.patch-corner-controls{display:flex;justify-content:center;margin:8px auto 4px}
+.patch-corner-controls .btn[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.patch-corner-anchor{outline:3px dashed var(--focus)!important;outline-offset:-5px;z-index:11}
+.board[role="grid"]{position:relative}
+@media(max-width:360px){.toolbar .btn{min-height:44px}.patch-corner-controls .btn{width:100%}}
+@media(prefers-contrast:more){
+  :root{--muted:#4d4b47;--danger:#8f1d1d;--ok:#155d3c;--focus:#0047a8}
+  :root[data-theme="dark"]{--muted:#e2dfd7;--danger:#ff9d9d;--ok:#a6e2bc;--focus:#b9ddff}
+  .btn,.difficulty,.game-card,.panel,.cell,.numpad button{border-width:2px}
+  .cell.selected,.cell.hint-focus{outline-width:4px!important}
+}
+@media(forced-colors:active){
+  .game-card,.panel,.btn,.difficulty,.board,.cell,.numpad button,.sheet,.victory-card{forced-color-adjust:auto}
+  .cell.selected,.cell.hint-focus,.board .cell[tabindex]:focus-visible{outline:3px solid Highlight!important}
+  .queen-zone-swatch,.patch-shape-icon{forced-color-adjust:none}
+}
+
+/* v2.22.0 — signaux non exclusivement colorés et zoom tactile */
+.board:not(#pboard) .cell.unjustified-piece{outline:2px dashed #9a5700;outline-offset:-4px}
+:root[data-theme="dark"] .board:not(#pboard) .cell.unjustified-piece{outline-color:#ffad42}
+.board,.cell{touch-action:pinch-zoom}
+.numpad,.patch-palette{touch-action:manipulation}
+@media(max-width:360px){
+  .numpad{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+  .numpad button{min-width:0;aspect-ratio:auto;min-height:44px}
+}
+

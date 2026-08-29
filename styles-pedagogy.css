@@ -1,0 +1,431 @@
+/* v2.12.0 — Logic Coach progressif en 4 étapes */
+.hint-context{
+  z-index:5;
+  box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 52%,transparent);
+}
+.coach-progress{
+  display:inline-flex;
+  min-width:34px;
+  justify-content:center;
+  margin-right:8px;
+  padding:2px 7px;
+  border-radius:999px;
+  background:color-mix(in srgb,var(--accent) 18%,transparent);
+  color:var(--ink);
+  font-size:12px;
+  font-weight:800;
+}
+@media(prefers-reduced-motion:reduce){
+  .hint-context{transition:none}
+}
+
+/* v2.13.0 — bibliothèque pédagogique des techniques */
+.coach-technique-title{display:block;font-weight:800;margin-bottom:3px}
+.coach-technique-id{display:inline-block;margin:2px 0 5px;padding:2px 5px;border-radius:5px;background:color-mix(in srgb,var(--muted) 16%,transparent);font-size:11px}
+.coach-technique-summary{display:block;color:var(--muted);font-size:12px;line-height:1.35}
+.technique-library{display:grid;gap:10px;margin:12px 0}
+.technique-card{padding:11px 12px;border:1px solid color-mix(in srgb,var(--muted) 30%,transparent);border-radius:12px;background:color-mix(in srgb,var(--paper) 92%,var(--soft))}
+.technique-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.technique-card code{font-size:10px;color:var(--muted);word-break:break-all}
+.technique-card small{display:block;margin-top:3px;color:var(--accent);font-weight:800}
+.technique-card p{margin:5px 0 0;color:var(--muted);font-size:13px}
+
+/* v2.14.0 — Explain my error */
+.error-coach{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin:4px 0 12px;padding:9px 10px;border-radius:12px;
+  border:1px solid color-mix(in srgb,#c83d3d 40%,transparent);
+  background:color-mix(in srgb,#c83d3d 9%,var(--paper));
+}
+.error-coach[hidden]{display:none}
+.error-coach-label{font-size:13px;font-weight:750}
+.error-explain-btn{padding:7px 10px;white-space:nowrap}
+.error-explanation{display:block;margin-top:6px;line-height:1.45}
+.error-return-btn{display:block;margin-top:10px}
+.error-focus{
+  z-index:9!important;
+  box-shadow:inset 0 0 0 3px #c83d3d,0 0 0 2px color-mix(in srgb,#c83d3d 25%,transparent)!important;
+}
+@media(max-width:520px){
+  .error-coach{align-items:stretch;flex-direction:column}
+  .error-explain-btn{width:100%}
+}
+
+/* v2.15.0 — profil de maîtrise logique */
+.mastery-home-card span:first-child{font-size:22px}
+.mastery-overall{margin:14px 0 18px;padding:16px;border-radius:16px;background:var(--soft);border:1px solid color-mix(in srgb,var(--accent) 28%,transparent)}
+.mastery-overall>div:first-child{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:end}
+.mastery-overall span{color:var(--muted);font-size:13px;font-weight:700}
+.mastery-overall strong{grid-row:1 / span 2;grid-column:2;font-size:34px}
+.mastery-overall small{font-weight:800;color:var(--accent)}
+.mastery-overall p{margin:9px 0 0;color:var(--muted);font-size:13px}
+.mastery-bar{height:8px;margin-top:9px;border-radius:999px;overflow:hidden;background:color-mix(in srgb,var(--muted) 18%,transparent)}
+.mastery-bar i{display:block;height:100%;border-radius:inherit;background:var(--accent);transition:width .25s ease}
+.mastery-games{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0 22px}
+.mastery-game-summary{display:grid;grid-template-columns:auto 1fr auto;gap:4px 9px;align-items:center;padding:12px;border:1px solid color-mix(in srgb,var(--muted) 28%,transparent);border-radius:14px;text-decoration:none;color:var(--ink);background:var(--paper)}
+.mastery-game-summary>span{font-size:21px}.mastery-game-summary strong{font-size:20px}.mastery-game-summary small{grid-column:2 / 4;color:var(--muted)}
+.mastery-game{scroll-margin-top:80px;margin-top:24px}.mastery-game h2{margin-bottom:10px}
+.mastery-techniques{display:grid;gap:10px}
+.mastery-technique{padding:12px 13px;border:1px solid color-mix(in srgb,var(--muted) 28%,transparent);border-radius:14px;background:var(--paper)}
+.mastery-technique-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.mastery-technique-head>div{min-width:0}.mastery-technique-head b{display:block}.mastery-technique-head code{display:block;margin-top:3px;font-size:10px;color:var(--muted);word-break:break-all}
+.mastery-technique-head strong{font-size:20px}
+.mastery-stars{margin-top:6px;letter-spacing:1px}.mastery-stars small{letter-spacing:0;color:var(--muted);font-weight:700}
+.mastery-detail{display:flex;flex-wrap:wrap;gap:7px 12px;margin-top:9px;font-size:12px;color:var(--muted)}
+.mastery-aids{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:12px;color:var(--muted)}
+.mastery-technique.level-4,.mastery-game-summary.level-4{border-color:color-mix(in srgb,var(--ok) 48%,transparent)}
+.mastery-technique.level-1,.mastery-game-summary.level-1{border-color:color-mix(in srgb,var(--danger) 35%,transparent)}
+@media(max-width:520px){.mastery-games{grid-template-columns:1fr}.mastery-technique-head{gap:8px}}
+@media(prefers-reduced-motion:reduce){.mastery-bar i{transition:none}}
+
+/* v2.16.0 — Logic Coach adaptatif */
+.coach-adaptive-note{
+  display:block;margin-top:8px;padding-top:7px;
+  border-top:1px solid color-mix(in srgb,var(--muted) 24%,transparent);
+  color:var(--muted);font-size:12px;line-height:1.35
+}
+
+/* v2.17.0 — entraînement ciblé */
+.training-home-card span:first-child{font-size:22px}
+.training-game{margin-top:22px}.training-game h2{margin-bottom:10px}
+.training-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.training-card{position:relative;padding:12px;border:1px solid color-mix(in srgb,var(--muted) 28%,transparent);border-radius:14px;background:var(--paper)}
+.training-card.recommended{border-color:color-mix(in srgb,var(--accent) 62%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 16%,transparent)}
+.training-card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.training-card-head b{display:block}.training-card-head code{display:block;margin-top:3px;font-size:10px;color:var(--muted);word-break:break-all}.training-card-head strong{font-size:19px}
+.training-card>small{display:block;margin:5px 0;color:var(--muted)}.training-rec{display:inline-block;margin-bottom:7px;padding:2px 7px;border-radius:999px;background:color-mix(in srgb,var(--accent) 14%,transparent);font-size:11px;font-weight:800;color:var(--accent)}
+.training-card-stats{display:flex;gap:12px;margin:5px 0 10px;color:var(--muted);font-size:12px}.training-start{width:100%}
+.training-shell-tag{color:var(--accent);font-weight:650}.training-complete-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+@media(max-width:620px){.training-grid{grid-template-columns:1fr}}
+
+.mastery-train-btn{margin-top:10px;width:100%}
+
+/* v2.18.0 — parcours Apprendre */
+.learning-home-card span:first-child{font-size:22px}
+.learning-overall{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;align-items:center;margin:12px 0 20px;padding:14px;border-radius:15px;background:var(--soft);border:1px solid color-mix(in srgb,var(--accent) 28%,transparent)}
+.learning-overall>b{font-size:28px}.learning-overall>span{color:var(--muted);font-weight:700}.learning-overall .learning-mini-bar{grid-column:1/3}
+.learning-game{margin:24px 0}.learning-game h2{margin-bottom:10px}
+.learning-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.learning-card{padding:12px;border:1px solid color-mix(in srgb,var(--muted) 28%,transparent);border-radius:14px;background:var(--paper)}
+.learning-card.completed{border-color:color-mix(in srgb,var(--ok) 45%,transparent)}
+.learning-card-head{display:flex;justify-content:space-between;gap:10px}.learning-card-head b{display:block}.learning-card-head code{font-size:10px;color:var(--muted);word-break:break-all}.learning-card-head strong{font-size:18px}
+.learning-card>small{display:block;margin:4px 0 8px;color:var(--muted)}
+.learning-mini-bar{height:7px;border-radius:999px;overflow:hidden;background:color-mix(in srgb,var(--muted) 18%,transparent);margin:7px 0 10px}.learning-mini-bar i{display:block;height:100%;background:var(--accent);border-radius:inherit}
+.lesson-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:12px 0 18px}
+.lesson-step{padding:9px 7px;text-align:center;border:1px solid color-mix(in srgb,var(--muted) 24%,transparent);border-radius:12px;color:var(--muted);font-size:11px}
+.lesson-step span{display:flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:50%;margin:0 auto 5px;background:var(--soft);font-weight:800}.lesson-step b{display:block}
+.lesson-step.done{color:var(--ink);border-color:color-mix(in srgb,var(--ok) 45%,transparent)}.lesson-step.done span{background:color-mix(in srgb,var(--ok) 18%,transparent)}
+.lesson-step.current{border-color:var(--accent)}
+.lesson-explanation{padding:16px;border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);border-radius:16px;background:var(--soft)}.lesson-explanation h2{margin:10px 0}.lesson-explanation p{line-height:1.5}
+.lesson-technique-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:var(--muted);font-size:12px}.lesson-technique-head code{font-size:10px}.lesson-technique-head b{margin-left:auto}
+.lesson-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.lesson-complete-banner{margin-top:14px;padding:12px;border-radius:12px;background:color-mix(in srgb,var(--ok) 13%,var(--paper));font-weight:800}
+.learning-guide{margin:0 0 12px;padding:12px 13px;border-radius:14px;border:1px solid color-mix(in srgb,var(--accent) 32%,transparent);background:color-mix(in srgb,var(--accent) 7%,var(--paper))}
+.learning-guide[hidden]{display:none}.learning-guide p{margin:7px 0;line-height:1.4}.learning-guide-head{display:flex;align-items:center;gap:8px}.learning-guide-head>span{display:inline-flex;min-width:34px;justify-content:center;padding:3px 7px;border-radius:999px;background:color-mix(in srgb,var(--accent) 18%,transparent);font-weight:800}
+.mastery-card-actions,.training-card-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+@media(max-width:620px){.learning-grid{grid-template-columns:1fr}.lesson-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.lesson-technique-head b{margin-left:0;width:100%}}
+
+/* v2.18.1 — errors are explained before any logical hint */
+.coach-error-item{margin-top:9px;padding-top:8px;border-top:1px solid color-mix(in srgb,var(--danger) 28%,transparent);line-height:1.4}
+.coach-error-item span{color:var(--muted)}
+
+/* v2.19.0 — Défi QUADLUD 4 jeux + scoring logique */
+.daily-circuit-cta{width:100%;margin:12px 0 14px;padding:13px 16px;font-size:15px}
+.daily-report{margin:0 0 18px;padding:14px;border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:16px;background:var(--soft)}
+.daily-report-score{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:end;margin-bottom:11px}
+.daily-report-score span{color:var(--muted);font-weight:750}.daily-report-score strong{grid-row:1/3;grid-column:2;font-size:30px}.daily-report-score small{font-weight:750;color:var(--accent)}
+.daily-report-row{display:grid;grid-template-columns:auto 1fr auto;gap:3px 9px;align-items:center;padding:9px 0;border-top:1px solid color-mix(in srgb,var(--muted) 20%,transparent)}
+.daily-report-row>span{font-size:19px}.daily-report-row>strong{font-size:16px}.daily-report-row>small{grid-column:2/4;color:var(--muted)}
+.daily-report p{margin:9px 0 0;color:var(--muted);font-size:12px;line-height:1.4}
+.victory-daily-score{display:grid;gap:2px;margin:8px auto 10px;padding:9px 12px;border-radius:12px;background:var(--soft)}
+.victory-daily-score span,.victory-daily-score small{color:var(--muted);font-size:12px}.victory-daily-score strong{font-size:27px}
+
+/* v2.19.1 — audit des coups non justifiés */
+.reasoning-audit{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 12px;padding:10px 11px;border-radius:12px;border:1px solid color-mix(in srgb,var(--accent) 38%,transparent);background:color-mix(in srgb,var(--accent) 8%,var(--paper))}
+.reasoning-audit[hidden]{display:none}.reasoning-audit>div:first-child{display:grid;gap:4px}.reasoning-audit small{display:block;color:var(--muted);line-height:1.35}.reasoning-audit-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:620px){.reasoning-audit{align-items:stretch;flex-direction:column}.reasoning-audit-actions{justify-content:stretch}.reasoning-audit-actions .btn{flex:1}}
+
+/* v2.20.0 — Mode Exploration */
+#exploreBtn.exploration-active{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 16%,transparent)}
+.exploration-panel{margin:4px 0 12px;padding:12px;border:1px solid color-mix(in srgb,var(--accent) 38%,transparent);border-radius:15px;background:color-mix(in srgb,var(--accent) 6%,var(--paper))}
+.exploration-panel[hidden]{display:none}.exploration-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.exploration-head>div{display:grid;grid-template-columns:auto 1fr;gap:2px 7px}.exploration-head>div>span{grid-row:1/3;font-size:22px}.exploration-head small{grid-column:2;color:var(--muted)}
+.exploration-tree{display:grid;gap:7px;margin:12px 0}.exploration-tree>b{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.exploration-branch{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;width:100%;text-align:left;padding:9px 10px;border:1px solid color-mix(in srgb,var(--muted) 25%,transparent);border-radius:11px;background:var(--paper);color:var(--ink)}
+.exploration-branch.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,var(--paper))}.exploration-branch.status-hypothesis{border-style:dashed}.exploration-branch.status-error{border-color:color-mix(in srgb,var(--danger) 60%,transparent)}
+.exploration-branch-icon{font-size:18px}.exploration-branch b,.exploration-branch small{display:block}.exploration-branch small{margin-top:2px;color:var(--muted);font-size:11px}.exploration-branch em{font-style:normal;font-weight:800;color:var(--muted)}
+.exploration-empty{padding:10px;border:1px dashed color-mix(in srgb,var(--muted) 35%,transparent);border-radius:10px;color:var(--muted)}
+.exploration-actions{display:flex;gap:7px;flex-wrap:wrap}.exploration-analysis{margin-top:10px;padding:10px;border-radius:11px;background:color-mix(in srgb,var(--ok) 8%,var(--paper));line-height:1.4}.exploration-analysis[hidden]{display:none}.exploration-analysis.bad{background:color-mix(in srgb,var(--danger) 9%,var(--paper))}.exploration-analysis>div{margin-top:5px;color:var(--muted)}
+@media(max-width:620px){.exploration-head{flex-direction:column}.exploration-actions .btn{flex:1}.exploration-branch{grid-template-columns:auto 1fr auto}}
+
+/* v2.21.0 — défis partageables */
+.challenge-home-card>span:first-child{font-size:21px}
+.challenge-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+.challenge-box{display:grid;gap:11px;padding:14px;border:1px solid color-mix(in srgb,var(--muted) 26%,transparent);border-radius:15px;background:var(--paper)}
+.challenge-box h2{margin:0}.challenge-box label{display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:700}
+.challenge-box .difficulty{width:100%}
+.challenge-input{width:100%;box-sizing:border-box;padding:10px 11px;border:1px solid color-mix(in srgb,var(--muted) 35%,transparent);border-radius:10px;background:var(--paper);color:var(--ink);font:700 15px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;text-transform:uppercase;letter-spacing:.03em}
+.challenge-ready{padding:15px;border:1px solid color-mix(in srgb,var(--accent) 36%,transparent);border-radius:16px;background:color-mix(in srgb,var(--accent) 7%,var(--paper));text-align:center}
+.challenge-ready>small{color:var(--muted);font-weight:750}.challenge-code{margin:9px 0;font:800 clamp(18px,5vw,28px)/1.15 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em;word-break:break-word}
+.challenge-meta{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:12px}.challenge-ready p,.challenge-note{color:var(--muted);line-height:1.45}
+.challenge-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:11px}.challenge-shell-tag{font-size:11px;color:var(--accent)}
+@media(max-width:620px){.challenge-columns{grid-template-columns:1fr}.challenge-actions .btn{flex:1}.challenge-code{font-size:18px}}
+
+
+/* v2.21.1 — alertes configurables sans déplacement du plateau */
+.error-coach{
+  position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 62px);transform:translateX(-50%);
+  z-index:117;width:min(92vw,520px);box-sizing:border-box;margin:0;
+  box-shadow:0 14px 38px rgba(0,0,0,.18);
+}
+.reasoning-audit{display:none!important}
+.board .cell.unjustified-piece{color:#9a5700!important}
+#qboard .cell.unjustified-piece .queen,#qboard .cell.unjustified-piece .mark,
+#tboard .cell.unjustified-piece .tango-symbol{color:#9a5700!important}
+#sboard .cell.unjustified-piece{color:#9a5700!important;text-shadow:0 0 0 #9a5700}
+#pboard .patch-cell.unjustified-piece{outline:0;z-index:5}
+#pboard .patch-cell.unjustified-piece::after{border-color:#d97800}
+:root[data-theme="dark"] .board .cell.unjustified-piece,
+:root[data-theme="dark"] #qboard .cell.unjustified-piece .queen,
+:root[data-theme="dark"] #qboard .cell.unjustified-piece .mark,
+:root[data-theme="dark"] #tboard .cell.unjustified-piece .tango-symbol,
+:root[data-theme="dark"] #sboard .cell.unjustified-piece{color:#ffad42!important}
+:root[data-theme="dark"] #pboard .patch-cell.unjustified-piece::after{border-color:#ffad42}
+@media(max-width:520px){
+  .error-coach{top:calc(env(safe-area-inset-top) + 58px);width:min(94vw,480px);flex-direction:row;align-items:center}
+  .error-explain-btn{width:auto;flex:0 0 auto}
+  .board-wrap{max-width:min(calc(100vw - 44px),calc(100dvh - 336px))}
+}
+/* v2.21.4 — résolution logique pas à pas */
+.walkthrough-panel{max-width:760px;margin-inline:auto}
+.walkthrough-help-note{margin:10px 0 12px;padding:9px 11px;border-radius:11px;background:var(--soft);color:var(--muted);font-size:12px;line-height:1.4}
+.walkthrough-board-wrap{display:flex;justify-content:center;margin:10px auto 14px;max-width:min(92vw,560px)}
+.walkthrough-board{width:min(92vw,560px);aspect-ratio:1;pointer-events:none;user-select:none}
+.walkthrough-queens-coordinate-wrap{display:grid;grid-template-columns:clamp(17px,3vw,20px) minmax(0,1fr);grid-template-rows:clamp(16px,2.5vw,18px) minmax(0,1fr);gap:2px 3px;align-items:stretch;width:min(92vw,560px);max-width:100%}
+.walkthrough-queens-coordinate-wrap .queens-column-coordinates{grid-column:2;grid-row:1;display:grid;align-items:end;width:100%;min-width:0}
+.walkthrough-queens-coordinate-wrap .queens-row-coordinates{grid-column:1;grid-row:2;display:grid;align-items:center;height:100%;min-height:0}
+.walkthrough-queens-coordinate-wrap .queens-column-coordinates span,.walkthrough-queens-coordinate-wrap .queens-row-coordinates span{display:grid;place-items:center;color:var(--muted)!important;font-size:clamp(10px,1.8vw,11px);font-weight:700;line-height:1;letter-spacing:.01em;user-select:none}
+.walkthrough-queens-coordinate-wrap .walkthrough-board{grid-column:2;grid-row:2;width:100%;max-width:100%}
+.walkthrough-cell{position:relative}
+/* v3.1.6-F — distinguish temporary Tutor proof states from the real board. */
+.walkthrough-hypothetical-cell{
+  outline:2px dashed color-mix(in srgb,#0b2948 72%,transparent);
+  outline-offset:-3px
+}
+.walkthrough-hypothesis-cell{outline-width:3px}
+.walkthrough-hypothesis-badge{
+  position:absolute;top:2px;right:2px;z-index:9;
+  min-width:18px;height:18px;padding:0 4px;border-radius:999px;
+  display:grid;place-items:center;
+  background:#0b2948;color:#fff7e7;
+  border:1px solid #fff7e7;
+  box-shadow:0 1px 3px rgba(5,25,45,.25);
+  font-size:11px;font-weight:850;line-height:1;pointer-events:none
+}
+:root[data-theme="dark"] .walkthrough-hypothetical-cell{outline-color:color-mix(in srgb,#fff7e7 72%,transparent)}
+@media(max-width:390px){.walkthrough-hypothesis-badge{min-width:16px;height:16px;padding:0 3px;font-size:9px}}
+@media(forced-colors:active){
+  .walkthrough-hypothetical-cell{outline-color:CanvasText}
+  .walkthrough-hypothesis-badge{background:CanvasText;color:Canvas;border-color:Canvas}
+}
+/* v3.1.5-LH8E — line/column pedagogical focus: subtle hatching + edge label */
+#qboard .cell>*,.walkthrough-board .cell>*{position:relative;z-index:2}
+.queen-line-focus{position:relative;z-index:3}
+.queen-line-focus::before{
+  content:"";
+  position:absolute;
+  inset:1px;
+  border-radius:4px;
+  pointer-events:none;
+  z-index:1;
+  opacity:.78;
+  background-repeat:repeat;
+  background-size:10px 10px
+}
+.queen-line-focus-row::before{
+  background-image:repeating-linear-gradient(-45deg,rgba(11,41,72,.18) 0 2px,rgba(11,41,72,0) 2px 7px)
+}
+.queen-line-focus-column::before{
+  background-image:repeating-linear-gradient(45deg,rgba(11,41,72,.18) 0 2px,rgba(11,41,72,0) 2px 7px)
+}
+.queen-line-focus-row.queen-line-focus-column::before{
+  background-image:repeating-linear-gradient(-45deg,rgba(11,41,72,.16) 0 2px,rgba(11,41,72,0) 2px 7px),repeating-linear-gradient(45deg,rgba(11,41,72,.16) 0 2px,rgba(11,41,72,0) 2px 7px)
+}
+.queen-unit-focus-label{
+  position:relative;
+  display:grid!important;
+  place-items:center;
+  min-width:16px;
+  min-height:16px;
+  padding:0 3px;
+  border-radius:999px;
+  border:1px solid rgba(11,41,72,.34);
+  background:rgba(255,247,231,.92);
+  color:#0b2948!important;
+  box-shadow:0 1px 2px rgba(5,25,45,.12);
+  font-weight:850!important
+}
+.queen-unit-focus-row-label{
+  background-image:repeating-linear-gradient(-45deg,rgba(11,41,72,.12) 0 2px,rgba(11,41,72,0) 2px 7px)
+}
+.queen-unit-focus-column-label{
+  background-image:repeating-linear-gradient(45deg,rgba(11,41,72,.12) 0 2px,rgba(11,41,72,0) 2px 7px)
+}
+@media(max-width:390px){.queen-unit-focus-label{min-width:14px;min-height:14px;padding:0 2px;font-size:9px}}
+
+/* v3.1.5-LH8C — global pedagogical focus for Lighthouses regions */
+.queen-region-focus{--queen-region-focus-color:#0b2948;z-index:4}
+.queen-region-focus-top{border-top:3px solid var(--queen-region-focus-color)!important}
+.queen-region-focus-right{border-right:3px solid var(--queen-region-focus-color)!important}
+.queen-region-focus-bottom{border-bottom:3px solid var(--queen-region-focus-color)!important}
+.queen-region-focus-left{border-left:3px solid var(--queen-region-focus-color)!important}
+.queen-region-focus[data-region-focus-badge]::after{
+  content:attr(data-region-focus-badge);
+  position:absolute;
+  top:2px;
+  left:2px;
+  z-index:9;
+  min-width:18px;
+  height:16px;
+  padding:0 3px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  background:#0b2948;
+  color:#fff7e7;
+  border:1px solid rgba(255,247,231,.9);
+  box-shadow:0 1px 3px rgba(5,25,45,.25);
+  font-size:9px;
+  font-weight:850;
+  line-height:1;
+  letter-spacing:.01em;
+  pointer-events:none
+}
+@media(max-width:390px){.queen-region-focus[data-region-focus-badge]::after{min-width:16px;height:14px;padding:0 2px;font-size:8px}}
+.walkthrough-target{box-shadow:inset 0 0 0 4px color-mix(in srgb,var(--accent) 78%,transparent);z-index:2}
+.walkthrough-explanation{display:grid;gap:8px;margin:12px 0;padding:13px 14px;border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);border-radius:14px;background:var(--paper);line-height:1.45}
+.walkthrough-explanation p{margin:0}.walkthrough-explanation.start{color:var(--muted)}
+.walkthrough-tech{display:flex;align-items:center;justify-content:space-between;gap:10px}.walkthrough-tech span{padding:3px 7px;border-radius:999px;background:var(--soft);font-size:11px;font-weight:800}
+.walkthrough-move{padding-top:6px;border-top:1px solid color-mix(in srgb,var(--muted) 20%,transparent)}
+.walkthrough-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.walkthrough-complete,.walkthrough-stalled{margin-top:10px;padding:10px 12px;border-radius:11px;font-weight:750}.walkthrough-complete{background:color-mix(in srgb,var(--ok) 10%,var(--paper))}.walkthrough-stalled{background:color-mix(in srgb,var(--danger) 9%,var(--paper))}
+@media(max-width:620px){.walkthrough-board-wrap,.walkthrough-board,.walkthrough-queens-coordinate-wrap{width:min(94vw,68svh);max-width:94vw}.walkthrough-actions .btn{flex:1}.walkthrough-target{box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--accent) 78%,transparent)}}
+
+/* v2.21.5 — Tuteur toujours accessible sur mobile */
+.toolbar .tutor-action{display:inline-flex;align-items:center;justify-content:center}
+@media(max-width:620px){
+  .toolbar .tutor-action{display:inline-flex!important}
+}
+
+/* v2.21.6 — navigation Tuteur au-dessus du contenu explicatif */
+.walkthrough-actions-top{margin:12px 0 8px}
+
+/* v2.21.7 — Tuteur : navigation + plateau toujours visibles, explications défilantes */
+body.tutor-active{overflow:hidden}
+body.tutor-active #app{
+  height:calc(100svh - 62px);
+  min-height:0;
+  padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+  overflow:hidden
+}
+body.tutor-active .walkthrough-panel{
+  height:100%;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  padding:12px
+}
+body.tutor-active .walkthrough-head{flex:0 0 auto}
+body.tutor-active .walkthrough-head h1{font-size:clamp(23px,7vw,31px)}
+body.tutor-active .walkthrough-head p{margin-top:4px}
+body.tutor-active .walkthrough-actions-top{
+  flex:0 0 auto;
+  margin:8px 0 7px
+}
+body.tutor-active .walkthrough-board-wrap{
+  flex:0 0 auto;
+  width:min(92vw,560px,calc(100svh - 340px));
+  max-width:100%;
+  margin:0 auto 7px
+}
+body.tutor-active .walkthrough-queens-coordinate-wrap{width:min(92vw,560px,calc(100svh - 340px));max-width:100%}
+body.tutor-active .walkthrough-board{
+  width:100%;
+  max-width:100%
+}
+body.tutor-active .walkthrough-scroll{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  padding:0 2px calc(4px + env(safe-area-inset-bottom))
+}
+body.tutor-active .walkthrough-help-note{margin:3px 0 7px;padding:7px 9px}
+body.tutor-active .walkthrough-explanation{margin:7px 0 0;padding:10px 11px}
+body.tutor-active .walkthrough-complete,
+body.tutor-active .walkthrough-stalled{margin-top:7px}
+
+@media(max-width:620px){
+  body.tutor-active .walkthrough-actions{flex-wrap:nowrap;gap:5px}
+  body.tutor-active .walkthrough-actions .btn{
+    flex:1 1 0;
+    min-width:0;
+    min-height:38px;
+    padding:7px 5px;
+    font-size:11px
+  }
+  body.tutor-active .walkthrough-board-wrap,
+  body.tutor-active .walkthrough-queens-coordinate-wrap{
+    width:min(calc(100vw - 50px),calc(100svh - 335px));
+  }
+}
+@media(max-height:700px) and (orientation:portrait){
+  body.tutor-active #app{padding-top:5px;padding-bottom:calc(5px + env(safe-area-inset-bottom))}
+  body.tutor-active .walkthrough-panel{padding:9px}
+  body.tutor-active .walkthrough-head h1{font-size:22px}
+  body.tutor-active .walkthrough-head p{font-size:11px}
+  body.tutor-active .walkthrough-head .btn{padding:7px 9px;font-size:11px}
+  body.tutor-active .walkthrough-actions-top{margin:5px 0}
+  body.tutor-active .walkthrough-board-wrap,
+  body.tutor-active .walkthrough-queens-coordinate-wrap{
+    width:min(calc(100vw - 44px),calc(100svh - 300px));
+    margin-bottom:5px
+  }
+}
+@media(orientation:landscape) and (max-height:520px){
+  body.tutor-active #app{height:calc(100svh - 62px);padding:5px 10px}
+  body.tutor-active .walkthrough-panel{
+    display:grid;
+    grid-template-columns:minmax(220px,1fr) minmax(0,calc(100svh - 92px));
+    grid-template-rows:auto auto minmax(0,1fr);
+    column-gap:10px
+  }
+  body.tutor-active .walkthrough-head,
+  body.tutor-active .walkthrough-actions-top,
+  body.tutor-active .walkthrough-scroll{grid-column:1}
+  body.tutor-active .walkthrough-board-wrap,
+  body.tutor-active .walkthrough-queens-coordinate-wrap{
+    grid-column:2;
+    grid-row:1/4;
+    align-self:center;
+    width:min(calc(100svh - 92px),58vw);
+    margin:0 auto
+  }
+  body.tutor-active .walkthrough-scroll{grid-row:3;overflow-y:auto}
+}
+
+/* v2.21.10 — Tuteur Queens : preuve structurée, plateau puis navigation puis explication */
+.walkthrough-context:not(.walkthrough-target){
+  box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 42%,transparent);
+  z-index:1
+}
+.walkthrough-step-counter{font-variant-numeric:tabular-nums;white-space:nowrap}
+body.tutor-active .walkthrough-board-wrap{margin:0 auto 5px}
+body.tutor-active .walkthrough-actions-top{margin:4px 0 7px}
+@media(max-width:620px){
+  .walkthrough-context:not(.walkthrough-target){box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 42%,transparent)}
+  body.tutor-active .walkthrough-board-wrap,body.tutor-active .walkthrough-queens-coordinate-wrap{width:min(calc(100vw - 50px),calc(100svh - 335px))}
+}
+
+/* v2.21.15 — Rectangles : les alertes "non justifié" recolorent uniquement le périmètre réel, jamais les séparations internes. */
+/* v2.21.16 — Rectangles : indices dimensionnés depuis la taille réelle des cellules, y compris tablette et Tuteur. */
+

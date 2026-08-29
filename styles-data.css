@@ -1,0 +1,3 @@
+/* v2.24 stage 24.4 — local data privacy/portability */
+.data-actions,.modal-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.btn.danger{border-color:color-mix(in srgb,var(--danger) 55%,var(--line));color:var(--danger)}.modal-actions{margin-top:18px}.data-setting-row{align-items:flex-start}.data-setting-row>span{min-width:0}.data-setting-row .data-actions{max-width:58%}@media(max-width:520px){.data-setting-row{display:grid}.data-setting-row .data-actions{max-width:none;width:100%;justify-content:flex-start}.data-setting-row .data-actions .btn{flex:1 1 auto}}
+

@@ -1,0 +1,181 @@
+/* v2.7.1 — Patches : affichage stabilisé + peinture fluide */
+.patch-board-wrap{
+  overflow:visible;
+}
+#pboard{
+  overflow:hidden;
+  background:#fff;
+  contain:layout paint;
+}
+#pboard .patch-cell{
+  background:var(--patch-fill,#fff);
+  transition:
+    background-color .16s cubic-bezier(.2,.75,.25,1),
+    color .16s ease,
+    transform .10s ease;
+  will-change:background-color;
+  isolation:isolate;
+}
+#pboard .patch-cell::after{
+  content:"";
+  position:absolute;
+  inset:-1px;
+  z-index:2;
+  pointer-events:none;
+  border:0 solid rgba(28,31,28,.76);
+  transition:border-width .10s ease,border-color .16s ease;
+}
+#pboard .patch-cell.patch-edge-t::after{border-top-width:2px}
+#pboard .patch-cell.patch-edge-r::after{border-right-width:2px}
+#pboard .patch-cell.patch-edge-b::after{border-bottom-width:2px}
+#pboard .patch-cell.patch-edge-l::after{border-left-width:2px}
+
+/* L'ancien contour autour de chaque case donnait un aspect "quadrillé" et
+   pouvait se superposer aux erreurs. Les contours ne marquent désormais
+   que le périmètre réel d'une zone peinte. */
+#pboard .patch-cell.paint{
+  outline:0;
+}
+#pboard .patch-cell.clue{
+  background:var(--patch-fill,#f7f1e5);
+}
+#pboard .patch-clue{
+  position:relative;
+  z-index:3;
+  min-width:1.45em;
+  min-height:1.45em;
+  padding:2px 4px;
+  border-radius:7px;
+  background:rgba(255,255,255,.78);
+  box-shadow:0 1px 2px rgba(0,0,0,.10);
+  color:#20231f;
+  font-variant-numeric:tabular-nums;
+  transform:translateZ(0);
+}
+#pboard .patch-clue b{font-size:clamp(13px,4.1vw,17px)}
+#pboard .patch-clue span{font-size:clamp(10px,3.1vw,13px)}
+#pboard .patch-cell.illegal::after{
+  border-color:transparent;
+}
+#pboard .patch-cell.illegal{
+  z-index:4;
+}
+
+/* Palette : une seule ligne horizontale, pas de saut vertical ni clipping. */
+.patch-palette{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  max-height:none;
+  padding:5px 2px 9px;
+  scroll-snap-type:x proximity;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.patch-palette::-webkit-scrollbar{display:none}
+.patch-chip{
+  scroll-snap-align:start;
+  transform:translateZ(0);
+  transition:
+    transform .16s cubic-bezier(.2,.75,.25,1),
+    box-shadow .16s ease,
+    border-color .16s ease,
+    filter .16s ease;
+}
+.patch-chip.active{
+  border-color:#222;
+  transform:scale(1.045);
+  box-shadow:0 3px 10px rgba(0,0,0,.16);
+  filter:saturate(1.05);
+}
+:root[data-theme="dark"] .patch-chip.active{
+  border-color:#f2efe7;
+  box-shadow:0 3px 12px rgba(0,0,0,.32);
+}
+:root[data-theme="dark"] #pboard .patch-clue{
+  background:rgba(255,255,255,.80);
+  color:#1f211f;
+}
+@media(max-width:520px){
+  .patch-palette{
+    gap:6px;
+    max-height:none;
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding-bottom:8px;
+  }
+  .patch-chip{
+    min-height:38px;
+    padding:7px 9px;
+    font-size:12px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  #pboard .patch-cell,
+  #pboard .patch-cell::after,
+  .patch-chip{
+    transition:none!important;
+  }
+}
+
+
+/* v2.8.0 — Mosaïque : rectangle interactif dynamique */
+#pboard.patch-rect-dragging{
+  cursor:crosshair;
+}
+#pboard .patch-cell.patch-preview{
+  background:color-mix(in srgb,var(--patch-preview-fill) 76%,#fff 24%)!important;
+  transition:background-color .075s linear,transform .075s ease;
+  z-index:5;
+}
+#pboard .patch-cell.patch-preview::before{
+  content:"";
+  position:absolute;
+  inset:-1px;
+  z-index:6;
+  pointer-events:none;
+  border:0 solid rgba(26,29,27,.92);
+  transition:border-width .055s linear,border-color .075s linear;
+}
+#pboard .patch-cell.patch-preview-t::before{border-top-width:3px}
+#pboard .patch-cell.patch-preview-r::before{border-right-width:3px}
+#pboard .patch-cell.patch-preview-b::before{border-bottom-width:3px}
+#pboard .patch-cell.patch-preview-l::before{border-left-width:3px}
+#pboard.patch-preview-invalid .patch-cell.patch-preview{
+  background:#f6c9c9!important;
+}
+#pboard.patch-preview-invalid .patch-cell.patch-preview::before{
+  border-color:#c83737;
+}
+#pboard .patch-cell.patch-preview .patch-clue{
+  z-index:8;
+}
+#pboard .patch-cell.patch-commit{
+  animation:patchRectCommit .17s cubic-bezier(.2,.78,.28,1);
+}
+@keyframes patchRectCommit{
+  0%{transform:scale(.965)}
+  60%{transform:scale(1.018)}
+  100%{transform:scale(1)}
+}
+@media(pointer:coarse){
+  #pboard .patch-cell.patch-preview::before{
+    border-width:0;
+  }
+  #pboard .patch-cell.patch-preview-t::before{border-top-width:3px}
+  #pboard .patch-cell.patch-preview-r::before{border-right-width:3px}
+  #pboard .patch-cell.patch-preview-b::before{border-bottom-width:3px}
+  #pboard .patch-cell.patch-preview-l::before{border-left-width:3px}
+}
+@media(prefers-reduced-motion:reduce){
+  #pboard .patch-cell.patch-preview,
+  #pboard .patch-cell.patch-preview::before{
+    transition:none!important;
+  }
+  #pboard .patch-cell.patch-commit{
+    animation:none!important;
+  }
+}
+

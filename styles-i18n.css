@@ -1,0 +1,36 @@
+/* v2.9.0 — internationalisation 10 langues + RTL */
+:root[dir="rtl"] body{direction:rtl}
+:root[dir="rtl"] .game-card,
+:root[dir="rtl"] .settings-card,
+:root[dir="rtl"] .stats-card,
+:root[dir="rtl"] .daily-card,
+:root[dir="rtl"] .rules,
+:root[dir="rtl"] .legend,
+:root[dir="rtl"] .legal-text,
+:root[dir="rtl"] .hint-notice-text,
+:root[dir="rtl"] .sheet,
+:root[dir="rtl"] .stats-head,
+:root[dir="rtl"] .history-row,
+:root[dir="rtl"] .setting-row span{text-align:right}
+:root[dir="rtl"] .top-actions{justify-content:flex-start}
+:root[dir="rtl"] .toolbar{direction:rtl}
+:root[dir="rtl"] .setting-row{direction:rtl}
+:root[dir="rtl"] .difficulty{direction:rtl;text-align:right}
+/* Puzzle geometry must never be mirrored: JS row/column mapping is left-to-right. */
+:root[dir="rtl"] .board,
+:root[dir="rtl"] .numpad,
+:root[dir="rtl"] .patch-palette{direction:ltr}
+:root[dir="rtl"] .patch-chip{direction:rtl}
+:root[dir="rtl"] .queen-options{direction:rtl}
+:root[lang="zh-Hans"] .game-head h1,
+:root[lang="zh-Hans"] .game-card h2,
+:root[lang="hi"] .game-head h1,
+:root[lang="hi"] .game-card h2,
+:root[lang="ar"] .game-head h1,
+:root[lang="ar"] .game-card h2,
+:root[lang="bn"] .game-head h1,
+:root[lang="bn"] .game-card h2,
+:root[lang="ur"] .game-head h1,
+:root[lang="ur"] .game-card h2{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+
+

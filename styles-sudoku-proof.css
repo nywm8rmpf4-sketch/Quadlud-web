@@ -1,0 +1,9 @@
+/* v2.22.1 — Grille 6: readable proof chains in Coach and Tutor */
+.sudoku-proof-block{display:block;margin-top:6px}
+.sudoku-proof-block+.sudoku-proof-block{margin-top:10px;padding-top:9px;border-top:1px solid color-mix(in srgb,var(--muted) 24%,transparent)}
+.sudoku-proof-steps{margin:6px 0 1px;padding-inline-start:22px}
+.sudoku-proof-steps li{margin:4px 0;padding-inline-start:2px}
+.hint-notice-text{max-height:min(58vh,460px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-inline-end:2px}
+.walkthrough-explanation .sudoku-proof-steps{margin-top:5px}
+@media(max-width:520px){.hint-notice-text{max-height:50vh}.sudoku-proof-steps{padding-inline-start:20px}}
+

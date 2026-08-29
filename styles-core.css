@@ -1,0 +1,537 @@
+/*
+ * Logic 4
+ * Copyright © 2026 Serge Benoliel. All rights reserved.
+ * Proprietary software. Copying, modification, redistribution or exploitation without prior written authorization is prohibited.
+ */
+:root{--bg:#f7f4ec;--paper:#fffdf8;--ink:#252525;--muted:#6f6d68;--line:#242424;--accent:#326b5f;--soft:#e7e2d8;--danger:#b54848;--ok:#2f7b57;--shadow:0 12px 30px rgba(33,28,20,.10)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif}
+body{padding-bottom:env(safe-area-inset-bottom)}
+button,select{font:inherit}
+.topbar{position:sticky;top:0;z-index:20;height:62px;padding:calc(8px + env(safe-area-inset-top)) 14px 8px;display:grid;grid-template-columns:48px 1fr 72px;align-items:center;background:rgba(247,244,236,.94);backdrop-filter:blur(18px);border-bottom:1px solid #ded9cf}
+.brand{text-align:center;font-size:17px;letter-spacing:.2px}.brand-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent);margin-right:7px}
+.timer{font-variant-numeric:tabular-nums;text-align:right;font-weight:700}.icon-btn{border:0;background:transparent;font-size:28px;color:var(--ink);padding:4px}
+#app{max-width:720px;margin:0 auto;padding:22px 16px 38px}
+.hero h1{font-family:Georgia,serif;font-size:39px;line-height:1;margin:10px 0 8px}.hero p{color:var(--muted);font-size:16px;line-height:1.45;margin:0 0 24px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}.game-card{min-height:154px;border:1px solid #d8d2c6;border-radius:20px;padding:18px;background:var(--paper);box-shadow:0 4px 16px rgba(33,28,20,.05);text-align:left;display:flex;flex-direction:column;justify-content:space-between}.game-card:active{transform:scale(.985)}.game-icon{font-size:34px}.game-card h2{margin:12px 0 4px;font-family:Georgia,serif;font-size:25px}.game-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.3}
+.panel{background:var(--paper);border:1px solid #d8d2c6;border-radius:20px;padding:16px;box-shadow:var(--shadow)}.game-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}.game-head h1{font:700 31px/1 Georgia,serif;margin:0}.game-head p{margin:7px 0 0;color:var(--muted);font-size:13px}.difficulty{border:1px solid #cbc4b7;background:#fff;border-radius:12px;padding:9px 10px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}.btn{border:1px solid #bfb7aa;background:#fff;border-radius:12px;padding:10px 13px;font-weight:650;color:var(--ink)}.btn.primary{background:var(--ink);color:white;border-color:var(--ink)}.btn:active{transform:translateY(1px)}.btn:disabled{opacity:.38;cursor:default;transform:none}.history-action{font-variant-numeric:tabular-nums}
+.board-wrap{width:min(100%,560px);margin:12px auto 6px}.board{display:grid;width:100%;aspect-ratio:1;border:2px solid var(--line);background:#fff;touch-action:manipulation;user-select:none}
+.cell{position:relative;display:flex;align-items:center;justify-content:center;border-right:1px solid rgba(30,30,30,.35);border-bottom:1px solid rgba(30,30,30,.35);font-weight:700;min-width:0}.cell.error{box-shadow:inset 0 0 0 3px var(--danger)}.cell.fixed{font-weight:800}.cell.selected{box-shadow:inset 0 0 0 3px #347fb6}.cell .small{position:absolute;top:3px;left:4px;font-size:9px;font-weight:600;color:#555}
+.queen{font-size:clamp(20px,6vw,35px)}.mark{font-size:clamp(14px,4vw,24px);color:#565656}.tango-symbol{font-size:clamp(20px,6.4vw,38px)}
+.relation{position:absolute;z-index:4;background:#fff;border:1px solid #222;border-radius:50%;font:800 12px/19px sans-serif;width:21px;height:21px;text-align:center}.relation.r{right:-11px;top:50%;transform:translateY(-50%)}.relation.d{bottom:-11px;left:50%;transform:translateX(-50%)}
+.sudoku .cell{font-size:clamp(23px,8vw,42px);font-family:Georgia,serif}.sudoku .boxR{border-right:3px solid #222}.sudoku .boxB{border-bottom:3px solid #222}.sudoku .fixed{background:#f0ece3}.numpad{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;max-width:560px;margin:12px auto}.numpad button{aspect-ratio:1;border:1px solid #c9c1b4;border-radius:12px;background:#fff;font-size:24px;font-family:Georgia,serif;font-weight:700}
+.rules{font-size:13px;color:var(--muted);line-height:1.45;margin-top:12px}.status{min-height:22px;text-align:center;font-weight:700;margin:8px 0}.status.ok{color:var(--ok)}.status.bad{color:var(--danger)}
+.patch-cell{font-size:12px}.patch-cell.clue{background:#f7f1e5}.patch-clue{display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;line-height:1.05;pointer-events:none}.patch-clue b{font-size:16px}.patch-cell.paint{outline:2px solid rgba(0,0,0,.65);outline-offset:-2px}.patch-palette{display:flex;gap:7px;overflow:auto;padding:5px 1px 8px}.patch-chip{flex:0 0 auto;border:2px solid transparent;border-radius:999px;padding:8px 11px;background:#eee;font-size:12px;font-weight:750}.patch-chip.active{border-color:#222}.legend{font-size:12px;color:var(--muted);margin-top:8px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:#222;color:#fff;padding:11px 16px;border-radius:999px;opacity:0;pointer-events:none;transition:.2s;z-index:50;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.footer-note{text-align:center;color:var(--muted);font-size:11px;margin-top:24px}.modal{position:fixed;inset:0;background:rgba(0,0,0,.36);z-index:40;display:flex;align-items:flex-end}.sheet{width:100%;max-width:720px;margin:0 auto;background:var(--paper);border-radius:22px 22px 0 0;padding:22px 20px calc(24px + env(safe-area-inset-bottom));max-height:75vh;overflow:auto}.sheet h2{font-family:Georgia,serif;margin-top:0}.sheet p,.sheet li{line-height:1.45;color:#4c4943}.hidden{display:none!important}
+@media(max-width:390px){#app{padding-left:12px;padding-right:12px}.cards{gap:9px}.game-card{padding:14px;min-height:144px}.hero h1{font-size:35px}}
+.resume-card{width:100%;margin:0 0 16px;border:1px solid #b9cfc8;background:#edf6f2;border-radius:16px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--ink);text-align:left}.resume-card b{font-size:15px}.resume-card span{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}.board,.numpad,.patch-palette{touch-action:none}.btn,.game-card,.patch-chip,.numpad button{min-height:44px}.cell{cursor:pointer}.cell.fixed{cursor:default}@media(pointer:coarse){.cell{touch-action:none}.toolbar{gap:7px}.btn{padding:10px 12px}}
+.difficulty-meter{display:inline-block;margin-left:.2rem;padding:.15rem .45rem;border-radius:999px;background:rgba(0,0,0,.07);font-size:.82em;font-weight:650;white-space:nowrap}
+
+/* v1.4 — ergonomie mobile/tactile */
+html{-webkit-text-size-adjust:100%;overscroll-behavior-y:none}
+body{min-height:100dvh;touch-action:manipulation}
+button,.cell,.patch-chip,.difficulty{touch-action:manipulation}
+button{min-height:44px}
+.icon-btn{min-width:44px;min-height:44px}
+.btn,.game-card,.patch-chip,.numpad button{transition:transform .08s ease,box-shadow .12s ease,background .12s ease}
+.pressed{transform:scale(.965)!important}
+.board-wrap{width:100%;max-width:min(100%,620px);margin-inline:auto;overflow:visible}
+.board{width:100%;aspect-ratio:1/1;user-select:none;-webkit-user-select:none}
+.cell{min-width:0;min-height:0;position:relative}
+#qboard .cell,#tboard .cell,#sboard .cell,#pboard .cell{touch-action:manipulation}
+#pboard{touch-action:none}
+.sudoku .cell.peer{background:#f0ede5}
+.sudoku .cell.same-value{background:#e2ece7}
+.sudoku .cell.selected{outline:3px solid var(--accent);outline-offset:-3px;z-index:2}
+.numpad{position:sticky;bottom:calc(8px + env(safe-area-inset-bottom));z-index:12;background:rgba(247,244,236,.94);backdrop-filter:blur(14px);padding:8px;border-radius:16px;margin-top:12px}
+.numpad button{min-height:48px}
+.toolbar{scrollbar-width:none}.toolbar::-webkit-scrollbar{display:none}
+.toast{bottom:calc(18px + env(safe-area-inset-bottom))}
+.busy-overlay{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:rgba(247,244,236,.72);backdrop-filter:blur(5px)}
+.busy-overlay[hidden]{display:none}.busy-card{background:var(--paper);border:1px solid #d8d2c6;border-radius:18px;padding:16px 22px;box-shadow:var(--shadow);font-weight:700}
+body.busy{pointer-events:none}
+@media (max-width:520px){
+  .topbar{height:56px;grid-template-columns:44px 1fr 64px;padding-left:10px;padding-right:10px}
+  #app{padding:12px 10px calc(26px + env(safe-area-inset-bottom))}
+  .panel{padding:12px;border-radius:16px}
+  .game-head{align-items:center;margin-bottom:8px}.game-head h1{font-size:27px}.game-head p{font-size:12px;line-height:1.3}
+  .difficulty{padding:8px 7px;min-height:42px;max-width:108px}
+  .toolbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:10px 0}
+  .toolbar .btn{padding:8px 4px;min-height:42px;font-size:12px;border-radius:10px}
+  .toolbar .secondary-action{display:none}
+  .toolbar #rulesBtn{display:block}
+  .board-wrap{max-width:calc(100vw - 44px)}
+  .cell{font-size:clamp(17px,5.4vw,30px)}
+  .queen{font-size:clamp(24px,8vw,40px)}
+  .tango-symbol{font-size:clamp(22px,7vw,36px)}
+  .relation{font-size:11px}
+  .patch-palette{gap:6px;max-height:92px;overflow:auto;-webkit-overflow-scrolling:touch}
+  .patch-chip{min-height:38px;padding:7px 9px;font-size:12px}
+  .legend,.rules{font-size:12px;line-height:1.35}
+  .hero h1{font-size:34px}.cards{gap:8px}.game-card{min-height:136px;padding:14px;border-radius:16px}
+}
+@media (max-height:720px) and (orientation:portrait){
+  #app{padding-top:8px;padding-bottom:calc(22px + env(safe-area-inset-bottom))}.toolbar{margin:7px 0}.game-head{margin-bottom:5px}.rules{margin-top:10px}
+}
+@media (orientation:landscape) and (max-height:520px){
+  .topbar{position:relative}.panel{display:grid;grid-template-columns:minmax(260px,1fr) minmax(300px,58vh);column-gap:14px}
+  .game-head,.toolbar,.status,.rules{grid-column:1}.board-wrap,.patch-palette,.legend,.numpad{grid-column:2}
+  .board-wrap{grid-row:1/6;align-self:start;max-width:min(58vh,520px)}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* v1.5 — statistiques et progression */
+.stats-card{width:100%;margin:14px 0 0;border:1px solid #d8d2c6;background:var(--paper);border-radius:16px;padding:14px 16px;display:grid;grid-template-columns:32px 1fr;column-gap:10px;text-align:left;box-shadow:0 4px 16px rgba(33,28,20,.05)}
+.stats-card>span{grid-row:1/3;font-size:26px;align-self:center}.stats-card b{font-size:15px}.stats-card small{color:var(--muted);margin-top:3px}
+.stats-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.stats-head h1{font:700 31px/1 Georgia,serif;margin:0}.stats-head p{color:var(--muted);margin:7px 0 0;font-size:13px}
+.stat-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:18px 0}.stat-kpis>div{background:#f3efe7;border-radius:14px;padding:12px 8px;text-align:center}.stat-kpis strong{display:block;font-size:22px;font-variant-numeric:tabular-nums}.stat-kpis span{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.stats-panel h2{font:700 21px Georgia,serif;margin:20px 0 10px}.stat-games{display:grid;gap:8px}.stat-game{display:grid;grid-template-columns:1.2fr repeat(3,1fr);gap:8px;align-items:center;padding:11px 12px;border:1px solid #e0d9cd;border-radius:12px;font-size:12px}.stat-game b{font-size:14px}.stat-game span{color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.history-list{display:grid;gap:7px}.history-row{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:10px 12px;background:#f8f5ee;border-radius:11px;font-size:12px}.history-row>span:nth-child(2){color:var(--muted);text-align:right}.history-row small{grid-column:1/-1;color:var(--muted)}
+.empty-state{color:var(--muted);font-size:13px}
+@media(max-width:520px){.stat-kpis{grid-template-columns:1fr 1fr}.stat-game{grid-template-columns:1fr 1fr}.stat-game span{text-align:left}.stats-head h1{font-size:27px}}
+
+/* v1.6 — défi quotidien */
+.daily-card{width:100%;margin:14px 0 0;border:1px solid #d8d2c6;background:linear-gradient(135deg,#fffaf0,#f1eadc);border-radius:16px;padding:14px 16px;display:grid;grid-template-columns:32px 1fr;column-gap:10px;text-align:left;box-shadow:0 4px 16px rgba(33,28,20,.05)}
+.daily-card>span{grid-row:1/3;font-size:24px;align-self:center}.daily-card b{font-size:15px}.daily-card small{color:var(--muted);margin-top:3px}
+.daily-panel h2{font:700 21px Georgia,serif;margin:22px 0 10px}.daily-games{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin:20px 0}.daily-game{border:1px solid #ddd5c8;background:var(--paper);border-radius:15px;min-height:110px;padding:12px 7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}.daily-game>span{font-size:28px}.daily-game b{font-size:13px}.daily-game small{color:var(--muted)}.daily-game.done{background:#edf4ee;border-color:#a8c4ad}
+.daily-calendar{display:grid;grid-template-columns:repeat(14,1fr);gap:5px}.day-dot{aspect-ratio:1;border-radius:7px;background:#e8e3da;display:grid;place-items:center;font-size:10px;color:#6f685d}.day-dot.level-1{background:#dce8df}.day-dot.level-2{background:#c6dacb}.day-dot.level-3{background:#a9c7b0}.day-dot.level-4{background:#91b39a}.day-dot.level-5{background:#6f9d7b;color:white;font-weight:700}.daily-note{font-size:12px;color:var(--muted);margin-top:14px}
+@media(max-width:520px){.daily-games{grid-template-columns:1fr 1fr}.daily-calendar{grid-template-columns:repeat(7,1fr)}}
+
+/* v1.7 — aides intelligentes */
+.cell.hint-focus{z-index:6;outline:4px solid #b77a2f!important;outline-offset:-4px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.8);animation:hintPulse 1.1s ease-in-out 2}
+@keyframes hintPulse{50%{transform:scale(.92)}}
+@media(prefers-reduced-motion:reduce){.cell.hint-focus{animation:none}}
+
+/* v2.0 — finition visuelle, thèmes, victoire, partage */
+:root[data-theme="dark"]{
+  --bg:#171916;--paper:#20231f;--ink:#f2efe7;--muted:#b8b5ad;--line:#e9e5db;--accent:#68a493;--soft:#30342f;--danger:#df7777;--ok:#73b78e;--shadow:0 14px 34px rgba(0,0,0,.28)
+}
+:root[data-theme="dark"] body{background:radial-gradient(circle at 50% -10%,#252a25 0,#171916 42%)}
+:root[data-theme="light"] body{background:radial-gradient(circle at 50% -10%,#fffdf6 0,#f4f1e9 42%)}
+:root[data-theme="dark"] .topbar{background:rgba(23,25,22,.9);border-color:#33372f}
+:root[data-theme="dark"] .game-card,:root[data-theme="dark"] .panel,:root[data-theme="dark"] .resume-card,:root[data-theme="dark"] .stats-card,:root[data-theme="dark"] .daily-card,:root[data-theme="dark"] .settings-card{border-color:#3a3e37;background:#20231f}
+:root[data-theme="dark"] .btn,:root[data-theme="dark"] .difficulty,:root[data-theme="dark"] .numpad button{background:#292d28;color:var(--ink);border-color:#464b43}
+:root[data-theme="dark"] .btn.primary{background:#f0ede5;color:#1d1f1c;border-color:#f0ede5}
+:root[data-theme="dark"] .rules,:root[data-theme="dark"] .legend,:root[data-theme="dark"] .status{border-color:#3b4038}
+:root[data-theme="dark"] #pboard .cell{color:#20231f}
+:root[data-theme="dark"] .sudoku .cell.peer{background:#2c302b}
+:root[data-theme="dark"] .sudoku .cell.same-value{background:#294139}
+:root[data-theme="dark"] .stat-kpis>div,:root[data-theme="dark"] .history-row{background:#292d28}
+:root[data-theme="dark"] .daily-game{background:#242722;border-color:#40443d}
+:root[data-theme="dark"] .daily-game.done{background:#274033;border-color:#4c795f}
+:root[data-theme="dark"] .numpad{background:rgba(23,25,22,.92)}
+.topbar{grid-template-columns:48px 1fr auto}
+.top-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px}.theme-btn{width:38px;height:38px;min-height:38px;border:0;border-radius:50%;background:transparent;color:var(--ink);font-size:20px}
+.hero{position:relative}.hero:after{content:"";display:block;width:54px;height:5px;border-radius:99px;background:var(--accent);margin-top:18px;opacity:.8}
+.game-card{position:relative;overflow:hidden}.game-card:before{content:"";position:absolute;inset:auto -26px -30px auto;width:90px;height:90px;border-radius:50%;background:var(--accent);opacity:.055}.game-card:hover{box-shadow:0 10px 24px rgba(33,28,20,.09)}
+.settings-card{width:100%;margin:10px 0 0;border:1px solid #d8d2c6;background:var(--paper);border-radius:16px;padding:14px 16px;display:grid;grid-template-columns:32px 1fr;column-gap:10px;text-align:left;box-shadow:0 4px 16px rgba(33,28,20,.05)}
+.settings-card>span{grid-row:1/3;font-size:24px;align-self:center}.settings-card b{font-size:15px}.settings-card small{color:var(--muted);margin-top:3px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:1px solid color-mix(in srgb,var(--muted) 25%,transparent)}.setting-row:last-child{border-bottom:0}.setting-row span{display:grid;gap:4px}.setting-row small{color:var(--muted);font-size:12px}
+.victory{position:fixed;inset:0;z-index:120;background:rgba(10,12,10,.48);backdrop-filter:blur(8px);display:grid;place-items:center;padding:24px;animation:fadeIn .2s ease}
+.victory-card{width:min(100%,390px);background:var(--paper);color:var(--ink);border:1px solid color-mix(in srgb,var(--muted) 28%,transparent);border-radius:28px;padding:30px 24px 24px;text-align:center;box-shadow:0 28px 80px rgba(0,0,0,.28);animation:victoryPop .34s cubic-bezier(.2,.8,.25,1.2)}
+.victory-burst{font-size:46px;color:var(--accent);animation:spinIn .6s ease}.victory-card>small{display:block;font-weight:800;letter-spacing:.18em;color:var(--accent);margin-top:6px}.victory-card h2{font:700 36px Georgia,serif;margin:12px 0 4px}.victory-time{font-size:58px;font-weight:850;font-variant-numeric:tabular-nums;letter-spacing:-.04em}.victory-card p{color:var(--muted);margin:4px 0 22px}.victory-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+@keyframes fadeIn{from{opacity:0}}@keyframes victoryPop{from{transform:translateY(18px) scale(.94);opacity:0}}@keyframes spinIn{from{transform:rotate(-70deg) scale(.6);opacity:0}}
+@media(max-width:520px){.top-actions{gap:1px}.theme-btn{width:34px;height:34px;min-height:34px}.setting-row{align-items:flex-start}.victory-card{border-radius:24px}.victory-time{font-size:52px}}
+@media(prefers-reduced-motion:reduce){.victory,.victory-card,.victory-burst{animation:none!important}}
+
+/* v2.0.2 — plateaux à dimensions stables */
+.board{grid-auto-rows:minmax(0,1fr);overflow:visible}
+.board>.cell{min-width:0;min-height:0}
+#qboard .queen,#qboard .mark{display:block;line-height:1;max-width:100%;max-height:100%}
+
+/* v2.0.3 — Queens : glissement pour X et croix automatiques */
+#qboard{touch-action:none}
+.queen-options{margin:4px 0 10px}
+.switch-row{display:flex;align-items:center;gap:10px;min-height:38px;font-size:13px;color:var(--muted);user-select:none;-webkit-user-select:none}
+.switch-row input{appearance:none;-webkit-appearance:none;width:42px;height:24px;border-radius:999px;background:var(--soft);border:1px solid color-mix(in srgb,var(--muted) 35%,transparent);position:relative;flex:0 0 auto;transition:background .15s ease}
+.switch-row input:after{content:"";position:absolute;width:18px;height:18px;left:2px;top:2px;border-radius:50%;background:var(--paper);box-shadow:0 1px 4px rgba(0,0,0,.22);transition:transform .15s ease}
+.switch-row input:checked{background:var(--accent)}
+.switch-row input:checked:after{transform:translateX(18px)}
+@media(prefers-reduced-motion:reduce){.switch-row input,.switch-row input:after{transition:none}}
+
+/* v2.0.4 — victoire automatique et animation de plateau */
+.board-complete{position:relative;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 72%,transparent),0 14px 36px rgba(0,0,0,.12)}
+.win-pop{animation:winCell .46s cubic-bezier(.2,.8,.25,1.25) var(--win-delay,0ms) both}
+@keyframes winCell{0%{transform:scale(1)}45%{transform:scale(.82)}72%{transform:scale(1.08)}100%{transform:scale(1)}}
+.celebration-layer{position:fixed;inset:0;pointer-events:none;z-index:115;overflow:hidden}
+.celebration-layer i{position:absolute;left:var(--x);top:18%;width:8px;height:18px;border-radius:2px;background:var(--accent);opacity:0;animation:confettiFall 1.25s ease-out var(--delay) forwards;transform:translateX(0) rotate(0)}
+.celebration-layer i:nth-child(3n){background:#d6a648}.celebration-layer i:nth-child(3n+1){background:#6e98bb}
+@keyframes confettiFall{0%{opacity:0;transform:translate(0,-16px) rotate(0)}12%{opacity:1}100%{opacity:0;transform:translate(var(--dx),72vh) rotate(var(--rot))}}
+@media(prefers-reduced-motion:reduce){.win-pop,.celebration-layer i{animation:none!important}.celebration-layer{display:none}}
+
+/* v2.2.0 — langue et écran À propos */
+.about-grid{display:grid;gap:10px;margin:20px 0}
+.about-grid>div{display:grid;grid-template-columns:minmax(90px,.7fr) 1.5fr;gap:12px;padding:13px 14px;background:color-mix(in srgb,var(--soft) 62%,transparent);border-radius:12px}
+.about-grid span{color:var(--muted);font-size:12px}.about-grid b{font-size:13px;line-height:1.4}
+.legal-text{font-size:13px;line-height:1.55;color:var(--muted);padding-top:8px}
+@media(max-width:520px){.about-grid>div{grid-template-columns:1fr}.about-grid span{margin-bottom:-5px}}
+
+/* v2.2.1 — reset + protection double-tap Queens */
+#qboard,#qboard .cell{
+  touch-action:none;
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+}
+#qboard .cell{-webkit-tap-highlight-color:transparent}
+@media(max-width:520px){
+  .toolbar{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .toolbar .btn{font-size:11px}
+}
+
+/* v2.2.2 — blocage explicite du double-tap zoom Safari sur Queens */
+#qboard{
+  touch-action:none!important;
+  -ms-touch-action:none;
+}
+#qboard,#qboard *{
+  -webkit-touch-callout:none;
+  -webkit-user-select:none;
+  user-select:none;
+}
+
+/* v2.2.3 — Queens : géométrie totalement indépendante du contenu */
+#qboard{
+  width:100%;
+  aspect-ratio:1 / 1;
+  min-width:0;
+  min-height:0;
+  contain:size layout paint;
+  overflow:hidden;
+}
+#qboard>.cell{
+  min-width:0;
+  min-height:0;
+  overflow:hidden;
+  contain:layout paint;
+}
+#qboard .queen,
+#qboard .mark{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:grid;
+  place-items:center;
+  line-height:1;
+  margin:0;
+  padding:0;
+  pointer-events:none;
+}
+#qboard .queen{font-size:min(7vw,35px)}
+#qboard .mark{font-size:min(4.8vw,24px)}
+
+/* v2.2.4 — Queens : reines dorées lors de la victoire */
+#qboard.queens-win .queen{
+  color:#d4af37;
+  text-shadow:
+    0 1px 0 rgba(255,255,255,.55),
+    0 0 8px rgba(212,175,55,.48),
+    0 0 18px rgba(212,175,55,.22);
+}
+:root[data-theme="dark"] #qboard.queens-win .queen{
+  color:#f0c84b;
+  text-shadow:
+    0 0 7px rgba(240,200,75,.58),
+    0 0 18px rgba(240,200,75,.28);
+}
+
+/* v2.3.0 — coups illégaux + indicateurs d'aide */
+.board .cell.illegal{
+  background:#ffd7d7!important;
+  box-shadow:inset 0 0 0 3px #c83737!important;
+  color:#8f1111;
+}
+:root[data-theme="dark"] .board .cell.illegal{
+  background:#5c2929!important;
+  box-shadow:inset 0 0 0 3px #f07878!important;
+  color:#fff1f1;
+}
+.aid-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:2px;
+  margin-left:4px;
+  padding:1px 5px;
+  border-radius:999px;
+  font:700 10px/1.5 -apple-system,BlinkMacSystemFont,Arial,sans-serif;
+  vertical-align:middle;
+  white-space:nowrap;
+}
+.aid-badge.backtrack{background:#eee2c8;color:#72531e}
+.aid-badge.hint-used{background:#dce9ef;color:#315e70}
+:root[data-theme="dark"] .aid-badge.backtrack{background:#4c412a;color:#f0d79e}
+:root[data-theme="dark"] .aid-badge.hint-used{background:#29434e;color:#b9e0ef}
+.live-aids:empty{display:none}
+.history-row .aid-badge{margin-left:3px}
+
+/* v2.3.1 — indice persistant */
+.hint-notice{
+  position:fixed;
+  left:50%;
+  bottom:max(18px,env(safe-area-inset-bottom));
+  transform:translateX(-50%);
+  z-index:118;
+  width:min(92vw,520px);
+  display:grid;
+  grid-template-columns:1fr auto;
+  align-items:center;
+  gap:12px;
+  padding:14px 14px 14px 16px;
+  border-radius:18px;
+  background:var(--paper);
+  color:var(--ink);
+  border:1px solid color-mix(in srgb,var(--accent) 42%,var(--muted));
+  box-shadow:0 18px 48px rgba(0,0,0,.22);
+}
+.hint-notice-text{font-size:14px;line-height:1.45}
+.hint-close{min-width:78px}
+:root[data-theme="dark"] .hint-notice{background:#252823}
+@media(max-width:520px){
+  .hint-notice{grid-template-columns:1fr;align-items:stretch}
+  .hint-close{width:100%}
+}
+
+/* v2.3.2 — indices explicites : coup + justification */
+.hint-secondary{display:block;margin-top:5px;color:var(--muted)}
+.hint-applied{display:block;margin-top:7px;color:var(--accent);font-weight:700}
+
+/* v2.5.0 — explications pédagogiques des inférences de rang 2 */
+.reason-step{display:block;margin-top:7px;padding-left:10px;border-left:3px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+.reason-step.dead{border-left-color:#c45a5a}
+.reason-step.conclusion{border-left-color:#6d9b63;font-weight:600}
+
+/* v2.5.4 — fenêtre d'indice déplaçable */
+.hint-drag-handle{
+  grid-column:1 / -1;
+  margin:-5px -5px 1px;
+  padding:5px 9px 7px;
+  border-bottom:1px solid color-mix(in srgb,var(--muted) 28%,transparent);
+  color:var(--muted);
+  font-size:12px;
+  font-weight:700;
+  text-align:center;
+  cursor:grab;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
+  -webkit-touch-callout:none;
+}
+.hint-drag-handle:active{cursor:grabbing}
+.hint-drag-handle span{letter-spacing:-3px;margin-right:5px}
+
+/* v2.6.1 — repère couleur des zones Queens dans les explications d'indices */
+.queen-zone-ref{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  white-space:nowrap;
+  font-weight:700;
+}
+.queen-zone-swatch{
+  display:inline-block;
+  width:23px;
+  height:14px;
+  flex:0 0 23px;
+  border:1px solid rgba(35,35,35,.42);
+  border-radius:3px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.32);
+  vertical-align:-2px;
+}
+
+
+
+/* v3.1.5-LH2 — LIGHTHOUSES board piece; strictly scoped to Queens board */
+#qboard .lighthouse-piece{color:#0b2948}
+#qboard .lighthouse-svg{width:68%;height:68%;display:block;overflow:visible;filter:drop-shadow(0 1px 1px rgba(5,25,45,.16))}
+#qboard .lighthouse-svg .lh-tower{fill:#fff7e7;stroke:#0b2948;stroke-width:2.4;stroke-linejoin:round}
+#qboard .lighthouse-svg .lh-roof,#qboard .lighthouse-svg .lh-base{fill:#0b2948}
+#qboard .lighthouse-svg .lh-lantern{fill:#fff7e7;stroke:#0b2948;stroke-width:2.2}
+#qboard .lighthouse-svg .lh-window{fill:#0b2948}
+#qboard .lighthouse-svg .lh-light{fill:#f1b84b}
+#qboard .lighthouse-svg .lh-beam{fill:#f1b84b;opacity:.22}
+#qboard.queens-win .lighthouse-svg{filter:drop-shadow(0 0 3px rgba(241,184,75,.65)) drop-shadow(0 0 8px rgba(241,184,75,.3))}
+:root[data-theme="dark"] #qboard .lighthouse-svg{filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+:root[data-theme="dark"] #qboard.queens-win .lighthouse-svg{filter:drop-shadow(0 0 4px rgba(241,184,75,.7)) drop-shadow(0 0 9px rgba(241,184,75,.34))}
+
+
+/* v3.1.5-LH6 — premium LIGHTHOUSES theme; selectors remain Queens/Lighthouses-only */
+body:has(#qboard){background-color:#5f7f98}
+body:has(#qboard) .topbar{
+  background:#0b2948;
+  border-bottom-color:rgba(255,255,255,.16);
+  color:#f8fbff;
+  box-shadow:0 6px 22px rgba(5,25,45,.18);
+}
+body:has(#qboard) .topbar .brand,
+body:has(#qboard) .topbar .timer,
+body:has(#qboard) .topbar .icon-btn{color:#f8fbff}
+body:has(#qboard) .topbar .brand-dot{
+  background:#f1b84b;
+  box-shadow:0 0 0 3px rgba(241,184,75,.13),0 0 12px rgba(241,184,75,.28);
+}
+.lighthouses-panel{
+  background-color:#5f7f98;
+  background-image:linear-gradient(180deg,rgba(255,255,255,.075),rgba(11,41,72,.045));
+  border-color:rgba(255,255,255,.18);
+  color:#f8fbff;
+  box-shadow:0 18px 44px rgba(5,25,45,.22);
+}
+.lighthouses-panel .game-head h1{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  color:#fff;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+  font-weight:800;
+  letter-spacing:.045em;
+  text-shadow:0 1px 2px rgba(5,25,45,.18);
+}
+.lighthouses-panel .game-head p{color:#e3edf4}
+.lighthouses-panel .difficulty{
+  background:#fffaf0;
+  border-color:rgba(11,41,72,.22);
+  color:#0b2948;
+  box-shadow:0 2px 9px rgba(5,25,45,.10);
+}
+.lighthouses-panel .switch-row{color:#e7f0f6}
+.lighthouses-panel .switch-row input{background:#d5e0e8;border-color:rgba(11,41,72,.22)}
+.lighthouses-panel .switch-row input:checked{background:#0b2948}
+.lighthouses-panel .queens-column-coordinates span,
+.lighthouses-panel .queens-row-coordinates span{color:#eef5f9!important;text-shadow:0 1px 1px rgba(5,25,45,.14)}
+
+.lighthouses-panel .toolbar .secondary-action{display:none}
+.lighthouses-panel .toolbar #rulesBtn{display:block}
+@media(orientation:landscape) and (max-height:520px){
+  .lighthouses-panel{
+    grid-template-columns:minmax(220px,1fr) minmax(0,min(72vw,calc(100svh - 68px)));
+    column-gap:12px
+  }
+  .lighthouses-panel .board-wrap{
+    width:min(72vw,calc(100svh - 68px));
+    max-width:min(72vw,calc(100svh - 68px));
+    justify-self:end;
+    margin:0 0 4px auto
+  }
+}
+.lighthouses-title-icon{
+  width:31px;
+  height:31px;
+  flex:0 0 31px;
+  display:grid;
+  place-items:center;
+  filter:drop-shadow(0 2px 4px rgba(5,25,45,.18));
+}
+.lighthouses-title-svg{width:100%;height:100%;display:block;overflow:visible}
+.lighthouses-title-svg .lh-tower{fill:#fff7e7;stroke:#0b2948;stroke-width:2.4;stroke-linejoin:round}
+.lighthouses-title-svg .lh-roof,.lighthouses-title-svg .lh-base{fill:#0b2948}
+.lighthouses-title-svg .lh-lantern{fill:#fff7e7;stroke:#0b2948;stroke-width:2.2}
+.lighthouses-title-svg .lh-window{fill:#0b2948}
+.lighthouses-title-svg .lh-light{fill:#f1b84b}
+.lighthouses-title-svg .lh-beam{fill:#f1b84b;opacity:.30}
+@media(max-width:520px){
+  .lighthouses-panel .game-head{gap:8px}
+  .lighthouses-panel .game-head h1{font-size:25px;letter-spacing:.035em}
+  .lighthouses-title-icon{width:27px;height:27px;flex-basis:27px}
+}
+@media(max-width:350px){
+  .lighthouses-panel .game-head>div{min-width:0;flex:1 1 auto}
+  .lighthouses-panel .game-head h1{font-size:22px;gap:6px;letter-spacing:.025em}
+  .lighthouses-panel .difficulty{max-width:70px;padding:6px 3px;font-size:11px}
+  .lighthouses-title-icon{width:25px;height:25px;flex-basis:25px}
+}
+
+
+/* v3.1.5-LH8B — tutor board must render visible lighthouse SVG pieces too */
+.walkthrough-board .queen,
+.walkthrough-board .mark{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:grid;
+  place-items:center;
+  line-height:1;
+  margin:0;
+  padding:0;
+  pointer-events:none;
+}
+.walkthrough-board .queen{font-size:min(7vw,35px)}
+.walkthrough-board .mark{font-size:min(4.8vw,24px)}
+.walkthrough-board .lighthouse-piece{color:#0b2948}
+.walkthrough-board .lighthouse-svg{width:68%;height:68%;display:block;overflow:visible;filter:drop-shadow(0 1px 1px rgba(5,25,45,.16))}
+.walkthrough-board .lighthouse-svg .lh-tower{fill:#fff7e7;stroke:#0b2948;stroke-width:2.4;stroke-linejoin:round}
+.walkthrough-board .lighthouse-svg .lh-roof,.walkthrough-board .lighthouse-svg .lh-base{fill:#0b2948}
+.walkthrough-board .lighthouse-svg .lh-lantern{fill:#fff7e7;stroke:#0b2948;stroke-width:2.2}
+.walkthrough-board .lighthouse-svg .lh-window{fill:#0b2948}
+.walkthrough-board .lighthouse-svg .lh-light{fill:#f1b84b}
+.walkthrough-board .lighthouse-svg .lh-beam{fill:#f1b84b;opacity:.22}
+:root[data-theme="dark"] .walkthrough-board .lighthouse-svg{filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+
+/* v3.1.5-LH7 — generic premium action buttons; shared CSS only */
+:root{
+  --btn-edge:color-mix(in srgb,var(--ink) 22%,var(--paper));
+  --btn-fill-top:color-mix(in srgb,var(--paper) 97%,white 3%);
+  --btn-fill-bottom:color-mix(in srgb,var(--paper) 91%,var(--soft) 9%);
+  --btn-shadow:0 2px 7px rgba(33,28,20,.10),inset 0 1px 0 rgba(255,255,255,.72);
+  --btn-shadow-hover:0 4px 11px rgba(33,28,20,.14),inset 0 1px 0 rgba(255,255,255,.78);
+}
+.btn{
+  border-color:var(--btn-edge);
+  background:linear-gradient(180deg,var(--btn-fill-top),var(--btn-fill-bottom));
+  border-radius:13px;
+  box-shadow:var(--btn-shadow);
+  font-weight:700;
+}
+.btn.primary{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--ink) 88%,var(--accent) 12%),var(--ink));
+  border-color:color-mix(in srgb,var(--ink) 88%,black 12%);
+  color:#fff;
+  box-shadow:0 3px 9px rgba(20,24,22,.20),inset 0 1px 0 rgba(255,255,255,.16);
+}
+@media(hover:hover) and (pointer:fine){
+  .btn:hover:not(:disabled){box-shadow:var(--btn-shadow-hover)}
+  .btn.primary:hover:not(:disabled){box-shadow:0 5px 13px rgba(20,24,22,.25),inset 0 1px 0 rgba(255,255,255,.20)}
+}
+.btn:active:not(:disabled){transform:translateY(1px);box-shadow:0 1px 3px rgba(33,28,20,.12),inset 0 1px 0 rgba(255,255,255,.55)}
+.btn:disabled{opacity:.42;box-shadow:none}
+body .panel .toolbar .btn{min-height:44px;border-radius:12px}
+:root[data-theme="dark"] .btn{
+  --btn-edge:#596159;
+  --btn-fill-top:#313630;
+  --btn-fill-bottom:#292d28;
+  --btn-shadow:0 2px 7px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.06);
+  --btn-shadow-hover:0 4px 11px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.08);
+  color:var(--ink);
+}
+:root[data-theme="dark"] .btn.primary{
+  background:linear-gradient(180deg,#f7f4ec,#e8e4da);
+  color:#1d1f1c;
+  border-color:#f0ede5;
+  box-shadow:0 3px 9px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.65);
+}
+@media(prefers-reduced-motion:reduce){.btn{transition:none!important}}
+
+/* v3.1.5-LH8F — iPhone Safari animation parity via cell-level motion (same proven layer as Coach focus) */
+@keyframes lighthouseCellPlaceIn{
+  0%{opacity:.58;transform:scale(.74);filter:brightness(1.28)}
+  58%{opacity:1;transform:scale(1.075);filter:brightness(1.08)}
+  100%{opacity:1;transform:scale(1);filter:none}
+}
+#qboard>.cell.lighthouse-cell-enter,
+.walkthrough-board>.cell.lighthouse-cell-enter{
+  transform-origin:center;
+  z-index:7;
+  animation:lighthouseCellPlaceIn 480ms cubic-bezier(.2,.8,.25,1) both
+}
+@media(prefers-reduced-motion:reduce){
+  #qboard>.cell.lighthouse-cell-enter,
+  .walkthrough-board>.cell.lighthouse-cell-enter{animation:none!important}
+}
+@media(forced-colors:active){
+  .btn{background:ButtonFace;color:ButtonText;border-color:ButtonText;box-shadow:none}
+  .btn.primary{background:Highlight;color:HighlightText;border-color:Highlight;box-shadow:none}
+  .btn:disabled{color:GrayText;border-color:GrayText;box-shadow:none}
+}

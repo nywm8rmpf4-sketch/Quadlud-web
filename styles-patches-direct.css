@@ -1,0 +1,218 @@
+/* v2.21.13 — Rectangles : interaction directe et grille tactile */
+.patch-board-wrap{position:relative;overflow:visible}
+#pboard,
+.walkthrough-board.patch-responsive-clues{
+  --patch-cell-size:56px;
+  --patch-clue-number-size:clamp(13px,calc(var(--patch-cell-size) * .28),32px);
+  --patch-clue-question-size:clamp(17px,calc(var(--patch-cell-size) * .35),38px);
+  --patch-clue-square-size:clamp(9px,calc(var(--patch-cell-size) * .17),22px);
+  --patch-clue-short-size:clamp(6px,calc(var(--patch-cell-size) * .11),14px);
+  --patch-clue-long-size:clamp(12px,calc(var(--patch-cell-size) * .23),28px);
+}
+#pboard{
+  --patch-grid-line:rgba(32,34,31,.13);
+  border-width:2px;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 7px 22px rgba(32,28,21,.07);
+}
+#pboard .patch-cell{
+  border-right-color:var(--patch-grid-line);
+  border-bottom-color:var(--patch-grid-line);
+}
+#pboard .patch-cell.clue{background:var(--patch-fill,#fff)}
+#pboard .patch-cell::after{
+  border-color:rgba(30,32,29,.86);
+  transition:border-width .08s linear,border-color .12s ease,opacity .12s ease;
+}
+#pboard .patch-cell.patch-edge-t::after{border-top-width:2.5px}
+#pboard .patch-cell.patch-edge-r::after{border-right-width:2.5px}
+#pboard .patch-cell.patch-edge-b::after{border-bottom-width:2.5px}
+#pboard .patch-cell.patch-edge-l::after{border-left-width:2.5px}
+#pboard .patch-cell.patch-edge-t.patch-edge-l::after{border-top-left-radius:8px}
+#pboard .patch-cell.patch-edge-t.patch-edge-r::after{border-top-right-radius:8px}
+#pboard .patch-cell.patch-edge-b.patch-edge-l::after{border-bottom-left-radius:8px}
+#pboard .patch-cell.patch-edge-b.patch-edge-r::after{border-bottom-right-radius:8px}
+
+#pboard .patch-clue,
+.walkthrough-board.patch-responsive-clues .patch-clue{
+  display:inline-flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:clamp(1px,calc(var(--patch-cell-size) * .018),3px);
+  min-width:clamp(22px,calc(var(--patch-cell-size) * .40),46px);
+  min-height:clamp(22px,calc(var(--patch-cell-size) * .40),46px);
+  padding:clamp(2px,calc(var(--patch-cell-size) * .035),5px) clamp(4px,calc(var(--patch-cell-size) * .055),8px);
+  border:1px solid rgba(34,36,33,.10);
+  border-radius:clamp(7px,calc(var(--patch-cell-size) * .075),10px);
+  background:rgba(255,255,255,.91);
+  box-shadow:0 1px 3px rgba(0,0,0,.10);
+  color:#1f211f;
+  font-size:var(--patch-clue-number-size);
+}
+#pboard .patch-clue.combined,
+.walkthrough-board.patch-responsive-clues .patch-clue.combined{gap:clamp(1px,calc(var(--patch-cell-size) * .012),2px)}
+#pboard .patch-clue b,
+.walkthrough-board.patch-responsive-clues .patch-clue b{font-size:1em;line-height:1}
+#pboard .patch-question,
+.walkthrough-board.patch-responsive-clues .patch-question{font-size:var(--patch-clue-question-size)!important}
+.patch-shape-icon{
+  display:block;
+  flex:0 0 auto;
+  border:clamp(1.6px,calc(var(--patch-cell-size) * .022),2.4px) solid currentColor;
+  border-radius:1.5px;
+  opacity:.9;
+}
+#pboard .patch-shape-icon.square,
+.walkthrough-board.patch-responsive-clues .patch-shape-icon.square{width:var(--patch-clue-square-size);height:var(--patch-clue-square-size)}
+#pboard .patch-shape-icon.vertical,
+.walkthrough-board.patch-responsive-clues .patch-shape-icon.vertical{width:var(--patch-clue-short-size);height:var(--patch-clue-long-size)}
+#pboard .patch-shape-icon.horizontal,
+.walkthrough-board.patch-responsive-clues .patch-shape-icon.horizontal{width:var(--patch-clue-long-size);height:var(--patch-clue-short-size)}
+
+#pboard.patch-rect-dragging .patch-cell.patch-resize-source{
+  filter:saturate(.55) brightness(1.05);
+  opacity:.62;
+}
+#pboard.patch-rect-dragging .patch-cell.patch-resize-source::after{opacity:.22}
+#pboard .patch-cell.patch-preview{
+  opacity:1;
+  filter:none;
+  background:color-mix(in srgb,var(--patch-preview-fill) 82%,#fff 18%)!important;
+}
+#pboard .patch-cell.patch-preview::before{
+  border-color:rgba(24,27,24,.96);
+  border-radius:0;
+}
+#pboard .patch-cell.patch-preview-t.patch-preview-l::before{border-top-left-radius:8px}
+#pboard .patch-cell.patch-preview-t.patch-preview-r::before{border-top-right-radius:8px}
+#pboard .patch-cell.patch-preview-b.patch-preview-l::before{border-bottom-left-radius:8px}
+#pboard .patch-cell.patch-preview-b.patch-preview-r::before{border-bottom-right-radius:8px}
+#pboard.patch-preview-warning .patch-cell.patch-preview{
+  background:#f6dfad!important;
+}
+#pboard.patch-preview-warning .patch-cell.patch-preview::before{
+  border-color:#b57416;
+}
+#pboard.patch-preview-invalid .patch-cell.patch-preview{
+  background:#f3d2d2!important;
+}
+#pboard.patch-preview-invalid .patch-cell.patch-preview::before{
+  border-color:#b43838;
+}
+#pboard.patch-preview-overlap-mode .patch-cell.patch-preview{
+  background:color-mix(in srgb,var(--patch-preview-fill) 64%,#fff 36%)!important;
+}
+#pboard.patch-preview-overlap-mode .patch-cell.patch-preview-overlap{
+  background:#efb6b6!important;
+  box-shadow:inset 0 0 0 3px #b52d2d;
+  z-index:8;
+}
+#pboard .patch-cell.patch-preview-clue-active .patch-clue{
+  box-shadow:0 0 0 3px rgba(48,111,92,.26),0 2px 5px rgba(0,0,0,.13);
+  transform:scale(1.06);
+}
+#pboard .patch-cell.patch-preview-clue-conflict .patch-clue{
+  box-shadow:0 0 0 3px rgba(190,49,49,.30),0 2px 5px rgba(0,0,0,.13);
+  color:#8d1919;
+}
+.patch-drag-badge{
+  position:absolute;
+  z-index:16;
+  min-width:max-content;
+  padding:5px 8px;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.12);
+  background:#252825;
+  color:#fff;
+  box-shadow:0 5px 15px rgba(0,0,0,.19);
+  font:800 12px/1 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;
+  font-variant-numeric:tabular-nums;
+  pointer-events:none;
+  white-space:nowrap;
+}
+.patch-drag-badge.above{transform:translate(-50%,calc(-100% - 6px))}
+.patch-drag-badge.below{transform:translate(-50%,6px)}
+.patch-drag-badge.valid{background:#285f50}
+.patch-drag-badge.warning{background:#9a6110}
+.patch-drag-badge.invalid{background:#9a3030}
+.patch-drag-badge[hidden]{display:none!important}
+.patch-gesture-legend{
+  width:min(100%,620px);
+  margin:7px auto 0;
+  text-align:center;
+  line-height:1.35;
+}
+
+:root[data-theme="dark"] #pboard{--patch-grid-line:rgba(25,27,25,.16);box-shadow:0 8px 24px rgba(0,0,0,.24)}
+:root[data-theme="dark"] #pboard .patch-clue,:root[data-theme="dark"] .walkthrough-board.patch-responsive-clues .patch-clue{background:rgba(255,255,255,.90);color:#1d201d}
+
+@media(pointer:coarse){
+  #pboard .patch-cell.patch-edge-t::after{border-top-width:3px}
+  #pboard .patch-cell.patch-edge-r::after{border-right-width:3px}
+  #pboard .patch-cell.patch-edge-b::after{border-bottom-width:3px}
+  #pboard .patch-cell.patch-edge-l::after{border-left-width:3px}
+  .patch-drag-badge{font-size:13px;padding:6px 9px}
+}
+
+@media(max-width:520px){
+  .patch-game-panel{
+    display:flex;
+    flex-direction:column;
+    padding-top:10px;
+  }
+  .patch-game-panel .game-head{order:0;margin-bottom:5px}
+  .patch-game-panel .toolbar{order:1;margin:5px 0 4px;grid-template-columns:repeat(4,minmax(0,1fr))}
+  .patch-game-panel .status{order:2;margin:2px 0;min-height:16px}
+  .patch-game-panel .error-coach{order:3}
+  .patch-game-panel .reasoning-audit{order:4}
+  .patch-game-panel .exploration-panel{order:5}
+  .patch-game-panel .learning-guide{order:6}
+  .patch-game-panel .patch-board-wrap{order:7;margin-top:2px;margin-bottom:2px;max-width:calc(100vw - 34px)}
+  .patch-game-panel .rules{order:8;display:none}
+  .patch-game-panel #undoBtn{order:1}
+  .patch-game-panel #redoBtn{order:2}
+  .patch-game-panel #hintBtn{order:3}
+  .patch-game-panel #walkthroughBtn{order:4}
+  .patch-game-panel #newBtn{order:5}
+  .patch-game-panel #resetBtn{order:6}
+  .patch-game-panel #rulesBtn{order:7;display:block}
+  .patch-game-panel #pauseBtn{order:8}
+  .patch-game-panel #checkBtn{order:9}
+  .patch-game-panel #exploreBtn{order:10}
+  .patch-game-panel #shareChallengeBtn{order:11}
+  .patch-game-panel #solutionBtn,.patch-game-panel #techniquesBtn{display:none!important}
+  .patch-game-panel .toolbar .btn{min-height:40px;padding:7px 3px;font-size:11px}
+  #pboard{border-radius:10px}
+  #pboard .patch-clue{box-shadow:0 1px 2px rgba(0,0,0,.09)}
+}
+@media(max-width:390px){
+  .patch-game-panel .patch-board-wrap{max-width:calc(100vw - 28px)}
+  .patch-game-panel .game-head h1{font-size:25px}
+  .patch-game-panel .difficulty{max-width:100px}
+  .patch-game-panel .toolbar .btn{font-size:10.5px}
+}
+@media(prefers-reduced-motion:reduce){
+  #pboard .patch-cell.patch-preview-clue-active .patch-clue{transform:none}
+}
+
+/* Rectangles keeps detailed rules behind the dedicated Rules button. */
+.patch-game-panel>.rules{display:none}
+
+
+/* v2.21.15 — Rectangles : erreurs sans fausses frontières internes */
+#pboard .patch-cell.illegal{
+  background:color-mix(in srgb,var(--patch-fill,#fff) 76%,#efb7b7 24%)!important;
+  box-shadow:none!important;
+  color:#7f1b1b;
+}
+#pboard .patch-cell.illegal::after{
+  border-color:rgba(30,32,29,.86)!important;
+}
+:root[data-theme="dark"] #pboard .patch-cell.illegal{
+  background:color-mix(in srgb,var(--patch-fill,#262927) 70%,#7f3434 30%)!important;
+  box-shadow:none!important;
+  color:#fff1f1;
+}
+
