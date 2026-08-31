@@ -1,0 +1,18 @@
+name: Temp export baseline
+on:
+  push:
+    branches: [temp-export-baseline-20260831]
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package public baseline
+        run: |
+          rm -rf .git .github
+          zip -qr quadlud-web-baseline.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quadlud-web-baseline
+          path: quadlud-web-baseline.zip
+          if-no-files-found: error
