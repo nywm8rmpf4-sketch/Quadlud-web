@@ -29,6 +29,8 @@
       applyIllegalClasses,applyConfiguredIllegalClasses,applyUnjustifiedHighlights,a11ySetupGrid,
       a11yAnnounce,a11yCoord,a11ySetCell,coarsePointer,checkVictory,hint,finish,requestFrame,cancelFrame,setTimer,getResizeObserver
     }=deps;
+    const GridCoordinates=deps.gridCoordinates||root?.QuadludGridCoordinates;
+    if(!GridCoordinates||typeof GridCoordinates.markup!=='function'||typeof GridCoordinates.coordinateLabel!=='function')throw new Error('QUADLUD Rectangles UI dependency unavailable: gridCoordinates');
     const patchEmptyEvidence=deps.patchEmptyEvidence||root?.patchEmptyEvidence,captureRejectedPatchError=deps.captureRejectedPatchError||root?.captureRejectedPatchError,patchIllegalCells=deps.patchIllegalCells||root?.patchIllegalCells;
     for(const [name,fn] of [['patchEmptyEvidence',patchEmptyEvidence],['captureRejectedPatchError',captureRejectedPatchError],['patchIllegalCells',patchIllegalCells]])if(typeof fn!=='function')throw new Error(`QUADLUD Rectangles UI dependency unavailable: ${name}`);
 
@@ -263,7 +265,8 @@
       if(!current||current.game!=='patches'||!board)return false;
       const clueAt=new Map(current.ids.map(id=>[current.clues[id].pos.join(','),id]));
       [...board.children].forEach((cell,i)=>{
-        const r=Math.floor(i/current.n),c=i%current.n,id=current.paint[r][c],clueId=clueAt.get(`${r},${c}`),parts=[a11yCoord(r,c)];
+        const r=Math.floor(i/current.n),c=i%current.n,id=current.paint[r][c],clueId=clueAt.get(`${r},${c}`),parts=[GridCoordinates.coordinateLabel(r,c)];
+        cell.dataset.coordinate=GridCoordinates.coordinateLabel(r,c);
         if(clueId!=null)parts.push(`#${clueId+1} ${clueA11y(current.clues[clueId])}`);
         if(id!=null)parts.push(`${tr('zone')} ${id+1}`);
         a11ySetCell(cell,r,c,parts.join(', '))
@@ -288,19 +291,19 @@
 
     function render(session){
       session.patchSelectedRects=session.patchSelectedRects||{};session.patchLogicEvidence=session.patchLogicEvidence||patchEmptyEvidence();
-      shell(gameLabel('patches'),`${session.n}×${session.n} · ${tr('generated')}`,session.diff,
-        `<div class="board-wrap patch-board-wrap"><div class="board" id="pboard" style="grid-template-columns:repeat(${session.n},minmax(0,1fr));grid-template-rows:repeat(${session.n},minmax(0,1fr))"></div><div class="patch-drag-badge" id="patchDragBadge" hidden aria-live="polite"></div></div>`,
-        gameRules('patches'));
+      const boardHtml=`<div class="patch-board-surface" style="grid-column:2;grid-row:2;position:relative;min-width:0"><div class="board" id="pboard" style="grid-template-columns:repeat(${session.n},minmax(0,1fr));grid-template-rows:repeat(${session.n},minmax(0,1fr))"></div><div class="patch-drag-badge" id="patchDragBadge" hidden aria-live="polite"></div></div>`;
+      const coordinateBoard=GridCoordinates.markup(session.n,session.n,{className:'board-wrap patch-board-wrap grid-coordinate-wrap patches-coordinate-wrap',columnClass:'patches-column-coordinates',rowClass:'patches-row-coordinates',boardHtml});
+      shell(gameLabel('patches'),`${session.n}×${session.n} · ${tr('generated')}`,session.diff,coordinateBoard,gameRules('patches'));
       getApp()?.querySelector('.panel')?.classList.add('patch-game-panel');
       const clueAt=new Map(session.ids.map(id=>[session.clues[id].pos.join(','),id])),board=query('#pboard');
       let drag=null,cornerMode=false,cornerAnchor=null,cornerLockedId=null;
       const clearCorner=()=>{cornerAnchor=null;cornerLockedId=null;clearPreview();board.querySelectorAll('.patch-corner-anchor').forEach(x=>x.classList.remove('patch-corner-anchor'))};
-      const cornerStart=(r,col)=>{const current=getCurrent(),existing=current.paint[r][col];cornerLockedId=existing;let anchor=[r,col];if(existing!=null){const box=rectForRegion(existing);if(box){const corners=[[box.r0,box.c0],[box.r0,box.c1],[box.r1,box.c0],[box.r1,box.c1]];anchor=corners.sort((a,b)=>((b[0]-r)**2+(b[1]-col)**2)-((a[0]-r)**2+(a[1]-col)**2))[0]}}cornerAnchor=anchor;cellEl(anchor[0],anchor[1])?.classList.add('patch-corner-anchor');renderPreview(anchor,[r,col],cornerLockedId);a11yAnnounce(`${tr('regionSelection')} · ${a11yCoord(r,col)}`)};
-      const cornerActivate=(r,col)=>{if(cornerAnchor){const anchor=[...cornerAnchor],locked=cornerLockedId;clearCorner();const ok=commitRectangle(anchor,[r,col],null,locked);if(ok)a11yAnnounce(cellEl(r,col)?.getAttribute('aria-label')||a11yCoord(r,col));return ok}cornerStart(r,col);return true};
-      const cornerRemove=(r,col)=>{const current=getCurrent(),id=current.paint[r][col];if(id==null)return false;clearCorner();const ok=removeRectangle(id);if(ok)a11yAnnounce(a11yCoord(r,col));return ok};
+      const cornerStart=(r,col)=>{const current=getCurrent(),existing=current.paint[r][col];cornerLockedId=existing;let anchor=[r,col];if(existing!=null){const box=rectForRegion(existing);if(box){const corners=[[box.r0,box.c0],[box.r0,box.c1],[box.r1,box.c0],[box.r1,box.c1]];anchor=corners.sort((a,b)=>((b[0]-r)**2+(b[1]-col)**2)-((a[0]-r)**2+(a[1]-col)**2))[0]}}cornerAnchor=anchor;cellEl(anchor[0],anchor[1])?.classList.add('patch-corner-anchor');renderPreview(anchor,[r,col],cornerLockedId);a11yAnnounce(`${tr('regionSelection')} · ${GridCoordinates.coordinateLabel(r,col)}`)};
+      const cornerActivate=(r,col)=>{if(cornerAnchor){const anchor=[...cornerAnchor],locked=cornerLockedId;clearCorner();const ok=commitRectangle(anchor,[r,col],null,locked);if(ok)a11yAnnounce(cellEl(r,col)?.getAttribute('aria-label')||GridCoordinates.coordinateLabel(r,col));return ok}cornerStart(r,col);return true};
+      const cornerRemove=(r,col)=>{const current=getCurrent(),id=current.paint[r][col];if(id==null)return false;clearCorner();const ok=removeRectangle(id);if(ok)a11yAnnounce(GridCoordinates.coordinateLabel(r,col));return ok};
 
       for(let r=0;r<session.n;r++)for(let col=0;col<session.n;col++){
-        const cell=document.createElement('div');cell.className='cell patch-cell';cell.dataset.r=r;cell.dataset.c=col;const clueId=clueAt.get(r+','+col);
+        const cell=document.createElement('div');cell.className='cell patch-cell';cell.dataset.r=r;cell.dataset.c=col;cell.dataset.coordinate=GridCoordinates.coordinateLabel(r,col);const clueId=clueAt.get(r+','+col);
         if(clueId!=null){cell.classList.add('clue');cell.dataset.clueId=clueId;cell.innerHTML=clueHTML(session.clues[clueId])}else cell.dataset.clueId='';board.appendChild(cell)
       }
       a11ySetupGrid(board,session.n,session.n,{keyshortcuts:'ArrowUp ArrowDown ArrowLeft ArrowRight Home End Enter Space Delete Backspace Escape',activate:cell=>cornerActivate(+cell.dataset.r,+cell.dataset.c),onFocus:cell=>{if(cornerAnchor)renderPreview(cornerAnchor,[+cell.dataset.r,+cell.dataset.c],cornerLockedId)},onKey:(event,cell)=>{const current=getCurrent();if(event.key==='Escape'&&cornerAnchor){clearCorner();a11yAnnounce(tr('regionSelection'));return true}if((event.key==='Delete'||event.key==='Backspace')&&current.paint[+cell.dataset.r][+cell.dataset.c]!=null){cornerRemove(+cell.dataset.r,+cell.dataset.c);return true}return false}});

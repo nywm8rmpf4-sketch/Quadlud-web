@@ -23,11 +23,13 @@
       genericLocalizedHint=h.genericLocalizedHint||(()=>({where:tr('visibleOnly'),why:'',move:''})),
       zoneBadge=h.zoneBadge||((id)=>`${tr('zone')} ${Number(id)+1}`), unitCells=h.unitCells||((ref,context)=>{let n=Number(context?.n)||0,out=[];if(!ref||!n)return out;if(ref.family==='row'){for(let c=0;c<n;c++)out.push([Number(ref.id),c])}else if(ref.family==='column'){for(let r=0;r<n;r++)out.push([r,Number(ref.id)])}else if(ref.family==='region'&&Array.isArray(context?.reg)){for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(context.reg[r]?.[c]===Number(ref.id))out.push([r,c])}return out}),
       isDetailedLanguage=h.isDetailedLanguage||(()=>false);
+    const sharedCoordinate=h.gridCoordinates&&typeof h.gridCoordinates.coordinateLabel==='function'?h.gridCoordinates.coordinateLabel:typeof h.cellName==='function'?h.cellName:null;
+    const humanCell=(r,c)=>sharedCoordinate?sharedCoordinate(r,c):cellCoordinate(r,c);
     const format=(key,vars={})=>String(tr(key)||key).replace(/\{([A-Za-z0-9_]+)\}/g,(_,k)=>vars[k]??'');
-    const rowHuman=id=>String.fromCharCode(65+Number(id));
+    const rowHuman=id=>h.gridCoordinates&&typeof h.gridCoordinates.rowLabel==='function'?h.gridCoordinates.rowLabel(Number(id)):String.fromCharCode(65+Number(id));
     const unitHuman=ref=>{if(!ref)return '';if(ref.family==='row')return `${tr('rowLabel')} ${rowHuman(ref.id)}`;if(ref.family==='column')return `${tr('columnLabel')} ${Number(ref.id)+1}`;return zoneBadge(Number(ref.id))};
     const unitListHuman=units=>(units||[]).map(unitHuman).join(tr('qlAnd'));
-    const cellListHuman=(cells,limit=12)=>{let a=(cells||[]).map(x=>cellCoordinate(x[0],x[1]));if(a.length<=limit)return a.join(', ');return a.slice(0,limit).join(', ')+format('qlMore',{count:a.length-limit})};
+    const cellListHuman=(cells,limit=12)=>{let a=(cells||[]).map(x=>humanCell(x[0],x[1]));if(a.length<=limit)return a.join(', ');return a.slice(0,limit).join(', ')+format('qlMore',{count:a.length-limit})};
     const conflictReasonHuman=reasons=>{let r=reasons?.[0],key=r==='ROW'?'qlConflictRow':r==='COLUMN'?'qlConflictColumn':r==='REGION'?'qlConflictRegion':r==='ADJACENCY'?'qlConflictAdjacency':'qlConflictRule';return tr(key)};
     const targetFamilyHuman=f=>tr(f==='row'?'qlRowsPlural':f==='column'?'qlColumnsPlural':'qlRegionsPlural');
     const targetFamilyCountHuman=(f,count)=>`${Number(count)} ${Number(count)===1?tr(f==='row'?'rowLabel':f==='column'?'columnLabel':'zone'):targetFamilyHuman(f)}`;
@@ -36,7 +38,7 @@
     function blockHuman(cells){
       if(!Array.isArray(cells)||!cells.length)return '';
       let rows=cells.map(x=>Number(x[0])),cols=cells.map(x=>Number(x[1])),r0=Math.min(...rows),r1=Math.max(...rows),c0=Math.min(...cols),c1=Math.max(...cols),rect=(r1-r0+1)*(c1-c0+1)===cells.length;
-      return rect?`${cellCoordinate(r0,c0)}–${cellCoordinate(r1,c1)}`:cellListHuman(cells)
+      return rect?`${humanCell(r0,c0)}–${humanCell(r1,c1)}`:cellListHuman(cells)
     }
     function sourceCandidateEntries(x){
       let source=x?.sourceCandidates,out=[];
@@ -55,12 +57,12 @@
       for(let i=0;i<(units||[]).length;i++){
         let ref=units[i],p=(premises||[]).find(q=>q?.unit?.family===ref.family&&Number(q?.unit?.id)===Number(ref.id))||(premises||[])[i];
         if(p?.kind==='candidate_set')out.push(candidateEntryHuman(ref,p.candidates||[]));
-        else if(p?.kind==='queen'&&Array.isArray(p.cell))out.push(`${unitHuman(ref)} → ${cellCoordinate(...p.cell)}`);
+        else if(p?.kind==='queen'&&Array.isArray(p.cell))out.push(`${unitHuman(ref)} → ${humanCell(...p.cell)}`);
         else out.push(unitHuman(ref))
       }
       return out.join('; ')
     }
-    function conflictListHuman(conflicts){return (conflicts||[]).map(z=>`${cellCoordinate(...z.candidate)} → ${conflictReasonHuman(z.reasons)}`).join('; ')}
+    function conflictListHuman(conflicts){return (conflicts||[]).map(z=>`${humanCell(...z.candidate)} → ${conflictReasonHuman(z.reasons)}`).join('; ')}
 
     function ruleTitle(d){
       let N=d?.explanationData?.size,key=d?.rule==='SINGLETON'?'qlSingleton':d?.rule==='LOCKED_UNIT'?'qlLocked':d?.rule==='COMMON_CONFLICT'?'qlCommonConflict':d?.rule==='HALL_SET'?(N===2?'qlHallPair':N===3?'qlHallTriple':'qlHallGroup'):d?.rule==='LOCAL_CAPACITY'?'qlCapacity':d?.rule==='NO_SUPPORT'?'qlNoSupport':d?.rule==='MIXED_HALL'?'qlMixedHall':d?.rule==='ASSUMPTION_CONTRADICTION'?'qlContradiction':d?.rule==='QUEEN_PROPAGATION'?'qlPropagation':null;
@@ -88,32 +90,32 @@
       if(!isDetailedLanguage(lang())){let c=d.conclusions?.[0],g=c?genericLocalizedHint(GAME,c.cell,d.rank,c.value):{where:tr('visibleOnly')};return `${ruleTitle(d)} · ${g.where}`}
       if(d.rule==='SINGLETON')return format('qlOrientSingleton',{unit:unitHuman(x.unit)});
       if(d.rule==='LOCKED_UNIT')return format('qlOrientLocked',{source:unitHuman(x.sourceUnit),target:unitHuman(x.targetUnit)});
-      if(d.rule==='COMMON_CONFLICT')return format('qlOrientCommon',{source:unitHuman(x.sourceUnit),target:cellCoordinate(...x.target)});
+      if(d.rule==='COMMON_CONFLICT')return format('qlOrientCommon',{source:unitHuman(x.sourceUnit),target:humanCell(...x.target)});
       if(d.rule==='HALL_SET')return format('qlOrientHall',{sources:unitListHuman(x.sourceUnits),targetFamily:targetFamilyHuman(x.targetFamily)});
       if(d.rule==='LOCAL_CAPACITY')return format('qlOrientCapacity',{size:x.size});
-      if(d.rule==='NO_SUPPORT')return format('qlOrientNoSupport',{target:cellCoordinate(...x.target),support:unitHuman(x.supportUnit)});
+      if(d.rule==='NO_SUPPORT')return format('qlOrientNoSupport',{target:humanCell(...x.target),support:unitHuman(x.supportUnit)});
       if(d.rule==='MIXED_HALL')return format('qlOrientMixed',{sources:unitListHuman(x.sourceUnits),rows:x.rows.length,columns:x.columns.length});
-      if(d.rule==='ASSUMPTION_CONTRADICTION')return format('qlOrientContradiction',{cell:cellCoordinate(...x.assumption.cell)});
-      if(d.rule==='QUEEN_PROPAGATION')return format('qlOrientPropagation',{cell:cellCoordinate(...x.queen)});
+      if(d.rule==='ASSUMPTION_CONTRADICTION')return format('qlOrientContradiction',{cell:humanCell(...x.assumption.cell)});
+      if(d.rule==='QUEEN_PROPAGATION')return format('qlOrientPropagation',{cell:humanCell(...x.queen)});
       return tr('visibleOnly')
     }
 
     function conclusionText(d){
       let cs=d?.conclusions||[],queens=cs.filter(x=>x.value===2).map(x=>x.cell),xs=cs.filter(x=>x.value===1).map(x=>x.cell),parts=[];
       if(queens.length)parts.push(format('qlConclusionQueen',{cells:cellListHuman(queens)}));
-      if(xs.length===1&&isDetailedLanguage(lang()))parts.push(format('qlConclusionX',{cell:cellCoordinate(...xs[0])}));else if(xs.length)parts.push(format('qlConclusionXs',{cells:cellListHuman(xs)}));
+      if(xs.length===1&&isDetailedLanguage(lang()))parts.push(format('qlConclusionX',{cell:humanCell(...xs[0])}));else if(xs.length)parts.push(format('qlConclusionXs',{cells:cellListHuman(xs)}));
       return parts.join(' ')
     }
 
     function directExplanation(d){
       let x=d?.explanationData||{},conclusion=conclusionText(d);
-      if(d.rule==='QUEEN_PROPAGATION')return format('qlExplainPropagation',{cell:cellCoordinate(...x.queen),cells:cellListHuman((d.conclusions||[]).filter(c=>c.value===1).map(c=>c.cell)),conclusion});
+      if(d.rule==='QUEEN_PROPAGATION')return format('qlExplainPropagation',{cell:humanCell(...x.queen),cells:cellListHuman((d.conclusions||[]).filter(c=>c.value===1).map(c=>c.cell)),conclusion});
       if(d.rule==='SINGLETON')return format('qlExplainSingleton',{unit:unitHuman(x.unit),conclusion});
       if(d.rule==='LOCKED_UNIT')return format('qlExplainLockedDetailed',{source:unitHuman(x.sourceUnit),candidates:cellListHuman(x.sourceCandidates),target:unitHuman(x.targetUnit),eliminated:cellListHuman(x.eliminated),conclusion});
-      if(d.rule==='COMMON_CONFLICT')return format('qlExplainCommon',{source:unitHuman(x.sourceUnit),candidates:cellListHuman(x.sourceCandidates),target:cellCoordinate(...x.target),conflicts:conflictListHuman(x.conflicts),conclusion});
+      if(d.rule==='COMMON_CONFLICT')return format('qlExplainCommon',{source:unitHuman(x.sourceUnit),candidates:cellListHuman(x.sourceCandidates),target:humanCell(...x.target),conflicts:conflictListHuman(x.conflicts),conclusion});
       if(d.rule==='HALL_SET')return format('qlExplainHallDetailed',{size:x.size,sources:sourceCandidatesHuman(x),targets:unitListHuman(x.targetUnits),targetFamily:targetFamilyHuman(x.targetFamily),eliminated:cellListHuman(x.eliminated),conclusion});
       if(d.rule==='LOCAL_CAPACITY')return format('qlExplainCapacityDetailed',{block:blockHuman(x.block),size:x.size,capacity:x.capacity,sources:mandatoryPremisesHuman(x.sourceUnits,d.premises),sourcesCount:(x.sourceUnits||[]).length,eliminated:cellListHuman(x.eliminated),conclusion});
-      if(d.rule==='NO_SUPPORT')return format('qlExplainNoSupportDetailed',{target:cellCoordinate(...x.target),support:unitHuman(x.supportUnit),candidates:cellListHuman(x.supportCandidates),conflicts:conflictListHuman(x.conflicts),conclusion});
+      if(d.rule==='NO_SUPPORT')return format('qlExplainNoSupportDetailed',{target:humanCell(...x.target),support:unitHuman(x.supportUnit),candidates:cellListHuman(x.supportCandidates),conflicts:conflictListHuman(x.conflicts),conclusion});
       if(d.rule==='MIXED_HALL')return format('qlExplainMixedDetailed',{size:x.size,sources:sourceCandidatesHuman(x),rows:(x.rows||[]).map(id=>unitHuman({family:'row',id})).join(', '),columns:(x.columns||[]).map(id=>unitHuman({family:'column',id})).join(', '),eliminated:cellListHuman(x.eliminated),conclusion});
       return conclusion
     }
@@ -134,10 +136,10 @@
       let x=d?.explanationData||{},a=x.assumption,w=x.witness||{},trace=Array.isArray(x.trace)?x.trace:[];
       if(!a?.cell)return null;
       return Object.freeze({
-        hypothesis:`<b>${tr('qlProofHypothesisLabel')}</b> ${format('qlProofTry',{assumed:tr(a.value===2?'qlAssumeQueen':'qlAssumeX'),cell:cellCoordinate(...a.cell)})}`,
+        hypothesis:`<b>${tr('qlProofHypothesisLabel')}</b> ${format('qlProofTry',{assumed:tr(a.value===2?'qlAssumeQueen':'qlAssumeX'),cell:humanCell(...a.cell)})}`,
         steps:Object.freeze(trace.map((step,i)=>`<b>${format('qlProofConsequenceLabel',{index:i+1})}</b> ${directExplanation(step)}`)),
         contradiction:`<b>${tr('qlProofContradictionLabel')}</b> ${witnessDetailedText(w)}`,
-        conclusion:`<b>${tr('qlProofConclusionLabel')}</b> ${format('qlProofReject',{cell:cellCoordinate(...a.cell),conclusion:conclusionText(d)})}`
+        conclusion:`<b>${tr('qlProofConclusionLabel')}</b> ${format('qlProofReject',{cell:humanCell(...a.cell),conclusion:conclusionText(d)})}`
       })
     }
 
@@ -230,15 +232,15 @@
       const conclusionFocus=tutorFocusDeduction(d,{id:'tutor-conclusion-focus',focusCells:[a.cell],conclusions:d.conclusions||[],explanationData:{assumption:a}});
       const witnessUnits=[...(w.sourceUnits||[]),...(w.targetUnits||[]),...(w.unit?[w.unit]:[])],witnessFocus=tutorFocusDeduction(d,{id:'tutor-contradiction-focus',focusCells:[...(w.cells||[]),...(w.block||[])],focusUnits:witnessUnits,premises:w.premises||[],explanationData:{witness:w,block:w.block||[],sourceUnits:w.sourceUnits||[],targetUnits:w.targetUnits||[],unit:w.unit||null}});
       stages.push(freezeStage({kind:'where',id:'where',evidenceRefs:view.provenance?.derivation?.focus||['primary.rule'],title:view.explanation.title,where:view.explanation.where,why:tr('visibleOnly'),move:'',temporary:false,resetToVisible:true,focusDeduction:tutorFocusDeduction(d,{id:'tutor-where-focus',focusCells:[a.cell],explanationData:{assumption:a}})}));
-      stages.push(freezeStage({kind:'hypothesis',id:narrative.hypothesis.id,evidenceRefs:narrative.hypothesis.evidenceRefs,title:view.explanation.title,where:cellCoordinate(...a.cell),why:parts.hypothesis,move:'',temporary:true,resetToVisible:false,stateChanges:[{cell:a.cell,value:a.value,rank:0}],focusDeduction:assumptionFocus}));
+      stages.push(freezeStage({kind:'hypothesis',id:narrative.hypothesis.id,evidenceRefs:narrative.hypothesis.evidenceRefs,title:view.explanation.title,where:humanCell(...a.cell),why:parts.hypothesis,move:'',temporary:true,resetToVisible:false,stateChanges:[{cell:a.cell,value:a.value,rank:0}],focusDeduction:assumptionFocus}));
       narrative.steps.forEach((node,i)=>{const step=supports[i];stages.push(freezeStage({kind:'consequence',id:node.id,evidenceRefs:node.evidenceRefs,title:ruleTitle(step),where:orientation(step),why:parts.steps[i],move:'',temporary:true,resetToVisible:false,stateChanges:clone(step?.conclusions||[]),focusDeduction:clone(step)}))});
       stages.push(freezeStage({kind:'contradiction',id:narrative.contradiction.id,evidenceRefs:narrative.contradiction.evidenceRefs,title:view.explanation.title,where:witnessOrientation(w),why:parts.contradiction,move:'',temporary:true,resetToVisible:false,focusDeduction:witnessFocus}));
-      stages.push(freezeStage({kind:'conclusion',id:narrative.conclusion.id,evidenceRefs:narrative.conclusion.evidenceRefs,title:view.explanation.title,where:cellCoordinate(...a.cell),why:parts.conclusion,move:'',temporary:false,resetToVisible:true,focusDeduction:conclusionFocus}));
-      stages.push(freezeStage({kind:'action',id:narrative.action.id,evidenceRefs:narrative.action.evidenceRefs,title:view.explanation.title,where:cellCoordinate(...((d.conclusions||[])[0]?.cell||a.cell)),why:parts.conclusion,move:view.explanation.move,temporary:false,resetToVisible:true,stateChanges:clone(d.conclusions||[]),focusDeduction:conclusionFocus,apply:true}));
+      stages.push(freezeStage({kind:'conclusion',id:narrative.conclusion.id,evidenceRefs:narrative.conclusion.evidenceRefs,title:view.explanation.title,where:humanCell(...a.cell),why:parts.conclusion,move:'',temporary:false,resetToVisible:true,focusDeduction:conclusionFocus}));
+      stages.push(freezeStage({kind:'action',id:narrative.action.id,evidenceRefs:narrative.action.evidenceRefs,title:view.explanation.title,where:humanCell(...((d.conclusions||[])[0]?.cell||a.cell)),why:parts.conclusion,move:view.explanation.move,temporary:false,resetToVisible:true,stateChanges:clone(d.conclusions||[]),focusDeduction:conclusionFocus,apply:true}));
       return Object.freeze(stages)
     }
 
-    return Object.freeze({GAME,SOURCE,cellCoordinate,ruleTitle,premiseCells,orientation,conclusionText,explanation,contradictionText,techniqueForDeduction,legacyReasoning,presentation,coachSequence,tutorSequence});
+    return Object.freeze({GAME,SOURCE,cellCoordinate:humanCell,ruleTitle,premiseCells,orientation,conclusionText,explanation,contradictionText,techniqueForDeduction,legacyReasoning,presentation,coachSequence,tutorSequence});
   }
   return Object.freeze({GAME,SOURCE,cellCoordinate,createPresenter});
 });

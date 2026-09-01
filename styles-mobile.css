@@ -24,3 +24,321 @@
   .nonogram-tools{margin:2px auto 2px;gap:4px}
   .nonogram-layout{width:min(100%,calc(100dvh - 326px))}
 }
+
+/* v3.1.8-A — adaptive game viewport contract.
+   Priority is explicit: preserve a playable board first, then give the
+   remaining viewport to controls and pedagogy. The page itself must not
+   become the scrolling surface while a game or Tutor is active. */
+:root{
+  --game-viewport-topbar:62px;
+  --game-board-max:760px;
+  --game-board-min-phone-portrait:330px;
+  --game-board-min-phone-landscape:270px;
+  --game-board-min-tablet-portrait:600px;
+  --game-board-min-tablet-landscape:560px;
+}
+
+body:has(#app .panel .board-wrap),
+body:has(#app .panel .nonogram-game){
+  overflow:hidden;
+}
+body:has(#app .panel .board-wrap) #app,
+body:has(#app .panel .nonogram-game) #app{
+  box-sizing:border-box;
+  height:calc(100dvh - var(--game-viewport-topbar));
+  max-width:1280px;
+  padding-top:12px;
+  padding-bottom:12px;
+  overflow:hidden;
+}
+body:has(#app .panel .board-wrap) #app>.panel,
+body:has(#app .panel .nonogram-game) #app>.panel{
+  box-sizing:border-box;
+  height:100%;
+  min-height:0;
+  overflow:hidden;
+}
+
+/* Portrait keeps the familiar vertical flow but lets the board consume the
+   useful viewport instead of remaining capped to the old desktop width. */
+@media (orientation:portrait){
+  .panel:has(.board-wrap),
+  .panel:has(.nonogram-game){
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+  }
+  .panel:has(.board-wrap) .game-head,
+  .panel:has(.nonogram-game) .game-head{flex:0 0 auto}
+  .panel:has(.board-wrap) .toolbar,
+  .panel:has(.nonogram-game) .toolbar{flex:0 0 auto}
+  .panel:has(.board-wrap) .status,
+  .panel:has(.nonogram-game) .status{flex:0 0 auto}
+
+  .panel:has(.board-wrap)>.board-wrap{
+    flex:0 1 auto;
+    width:min(calc(100vw - 64px),calc(100dvh - 330px),var(--game-board-max));
+    max-width:none;
+    margin-top:8px;
+    margin-bottom:8px;
+  }
+  .panel:has(.sudoku)>.board-wrap{
+    width:min(calc(100vw - 64px),calc(100dvh - 420px),var(--game-board-max));
+  }
+  .panel:has(.nonogram-game)>.nonogram-game{
+    flex:1 1 auto;
+    min-height:0;
+    max-width:none;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .panel:has(.nonogram-game) .nonogram-layout{
+    flex:0 1 auto;
+    width:min(calc(100vw - 64px),calc(100dvh - 390px),var(--game-board-max));
+    max-width:none;
+  }
+
+  .panel:has(.sudoku)>.numpad{
+    flex:0 0 auto;
+    margin-top:4px;
+  }
+}
+
+/* Tablet portrait: give the board a genuinely tablet-sized floor whenever
+   the viewport can satisfy it. The min() above still keeps smaller devices
+   safe; these floors only apply when the corresponding space exists. */
+@media (orientation:portrait) and (min-width:768px) and (min-height:900px){
+  .panel:has(.board-wrap)>.board-wrap{
+    width:clamp(var(--game-board-min-tablet-portrait),min(calc(100vw - 120px),calc(100dvh - 360px)),var(--game-board-max));
+  }
+  .panel:has(.sudoku)>.board-wrap{
+    width:clamp(var(--game-board-min-tablet-portrait),min(calc(100vw - 120px),calc(100dvh - 460px)),var(--game-board-max));
+  }
+  .panel:has(.nonogram-game) .nonogram-layout{
+    width:clamp(var(--game-board-min-tablet-portrait),min(calc(100vw - 120px),calc(100dvh - 430px)),var(--game-board-max));
+  }
+}
+
+/* Wide landscape uses the otherwise wasted horizontal space: identity,
+   toolbar and status live on the left; board/game surface lives on the right.
+   No JavaScript or game state is involved in this presentation rule. */
+@media (orientation:landscape) and (min-width:700px){
+  body:has(#app .panel .board-wrap) #app,
+  body:has(#app .panel .nonogram-game) #app{
+    padding:10px 14px;
+  }
+  .panel:has(.board-wrap),
+  .panel:has(.nonogram-game){
+    display:grid;
+    grid-template-columns:minmax(280px,.72fr) minmax(0,1fr);
+    grid-template-rows:auto auto auto 1fr;
+    column-gap:20px;
+    align-items:start;
+    min-height:0;
+  }
+  .panel:has(.board-wrap)>.game-head,
+  .panel:has(.nonogram-game)>.game-head{grid-column:1;grid-row:1}
+  .panel:has(.board-wrap)>.toolbar,
+  .panel:has(.nonogram-game)>.toolbar{grid-column:1;grid-row:2;margin-top:8px}
+  .panel:has(.board-wrap)>.status,
+  .panel:has(.nonogram-game)>.status{grid-column:1;grid-row:3}
+  .panel:has(.board-wrap)>.queen-options{grid-column:1;grid-row:4;align-self:start}
+
+  .panel:has(.board-wrap)>.board-wrap{
+    grid-column:2;
+    grid-row:1 / -1;
+    align-self:center;
+    justify-self:center;
+    width:min(calc(100dvh - 118px),calc(100% - 4px),var(--game-board-max));
+    max-width:none;
+    margin:0;
+  }
+  .panel:has(.sudoku)>.board-wrap{
+    grid-row:1 / 4;
+    width:min(calc(100dvh - 176px),calc(100% - 4px),var(--game-board-max));
+  }
+  .panel:has(.sudoku)>.numpad{
+    grid-column:2;
+    grid-row:4;
+    align-self:end;
+    justify-self:center;
+    width:min(100%,var(--game-board-max));
+    margin:4px 0 0;
+  }
+  .panel:has(.nonogram-game)>.nonogram-game{
+    grid-column:2;
+    grid-row:1 / -1;
+    align-self:center;
+    justify-self:center;
+    width:min(calc(100dvh - 112px),calc(100% - 4px),var(--game-board-max));
+    max-width:none;
+    margin:0;
+  }
+  .panel:has(.nonogram-game) .nonogram-layout{width:100%;max-width:none}
+}
+
+/* Large landscape gets a tested playable floor without forcing overflow on
+   smaller landscape devices. */
+@media (orientation:landscape) and (min-width:1000px) and (min-height:700px){
+  .panel:has(.board-wrap)>.board-wrap{
+    width:clamp(var(--game-board-min-tablet-landscape),min(calc(100dvh - 118px),calc(100% - 4px)),var(--game-board-max));
+  }
+  .panel:has(.sudoku)>.board-wrap{
+    width:clamp(var(--game-board-min-tablet-landscape),min(calc(100dvh - 176px),calc(100% - 4px)),var(--game-board-max));
+  }
+  .panel:has(.nonogram-game)>.nonogram-game{
+    width:clamp(var(--game-board-min-tablet-landscape),min(calc(100dvh - 112px),calc(100% - 4px)),var(--game-board-max));
+  }
+}
+
+/* Phone landscape is the tightest arbitration case. Override the historical
+   58vh cap: a playable board takes priority, while controls use the remaining
+   horizontal column. */
+@media (orientation:landscape) and (max-height:520px) and (min-width:600px){
+  :root{--game-viewport-topbar:62px}
+  body:has(#app .panel .board-wrap) #app,
+  body:has(#app .panel .nonogram-game) #app{padding:6px 8px}
+  .panel:has(.board-wrap),
+  .panel:has(.nonogram-game){
+    padding:8px 10px;
+    grid-template-columns:minmax(250px,1fr) minmax(var(--game-board-min-phone-landscape),.72fr);
+    column-gap:10px;
+  }
+  .panel:has(.board-wrap) .game-head,
+  .panel:has(.nonogram-game) .game-head{margin-bottom:2px}
+  .panel:has(.board-wrap) .toolbar,
+  .panel:has(.nonogram-game) .toolbar{margin:2px 0;gap:4px}
+  .panel:has(.board-wrap) .status,
+  .panel:has(.nonogram-game) .status{min-height:8px;margin:0}
+  .panel:has(.board-wrap)>.board-wrap{
+    width:clamp(var(--game-board-min-phone-landscape),calc(100dvh - 104px),330px);
+  }
+  .panel:has(.sudoku)>.board-wrap{
+    width:clamp(var(--game-board-min-phone-landscape),calc(100dvh - 142px),310px);
+  }
+  .panel:has(.nonogram-game)>.nonogram-game{
+    width:clamp(var(--game-board-min-phone-landscape),calc(100dvh - 98px),330px);
+  }
+  .panel:has(.sudoku)>.numpad button{min-height:32px}
+}
+
+/* Phone portrait keeps the 44px-touch controls but protects the board floor
+   on the reference 390×844 class. Very small devices may fall below the floor
+   rather than create page scrolling; this is the explicit degraded mode. */
+@media (orientation:portrait) and (min-width:375px) and (min-height:760px) and (max-width:520px){
+  :root{--game-viewport-topbar:62px}
+  .panel:has(.board-wrap)>.board-wrap{
+    width:max(var(--game-board-min-phone-portrait),min(calc(100vw - 44px),calc(100dvh - 338px)));
+  }
+  .panel:has(.sudoku)>.board-wrap{
+    width:max(var(--game-board-min-phone-portrait),min(calc(100vw - 44px),calc(100dvh - 424px)));
+  }
+  .panel:has(.nonogram-game) .nonogram-layout{
+    width:max(var(--game-board-min-phone-portrait),min(calc(100vw - 44px),calc(100dvh - 400px)));
+  }
+}
+
+/* Tutor uses the same board-first rule. Its explanation is the internal
+   scrolling surface when content exceeds the remaining space. */
+body.tutor-active{overflow:hidden}
+body.tutor-active #app{overflow:hidden}
+body.tutor-active .walkthrough-panel{min-height:0;overflow:hidden}
+body.tutor-active .walkthrough-scroll{min-height:0;overflow:auto;overscroll-behavior:contain}
+@media (orientation:landscape) and (min-width:700px){
+  body.tutor-active .walkthrough-panel{
+    display:grid;
+    grid-template-columns:minmax(var(--game-board-min-phone-landscape),min(62dvh,var(--game-board-max))) minmax(300px,1fr);
+    grid-template-rows:auto auto minmax(0,1fr);
+    column-gap:18px;
+    align-items:start;
+  }
+  body.tutor-active .walkthrough-head{grid-column:1 / -1;grid-row:1}
+  body.tutor-active .walkthrough-stage{grid-column:1;grid-row:2 / 4;min-height:0;align-self:start}
+  body.tutor-active .walkthrough-board-wrap{
+    width:min(calc(100dvh - 154px),100%,var(--game-board-max));
+    max-width:none;
+    margin:0 auto;
+  }
+  body.tutor-active .walkthrough-nav{grid-column:2;grid-row:2;margin-top:0}
+  body.tutor-active .walkthrough-scroll{grid-column:2;grid-row:3;max-height:none;height:100%}
+}
+@media (orientation:landscape) and (min-width:1000px) and (min-height:700px){
+  body.tutor-active .walkthrough-panel{
+    grid-template-columns:minmax(var(--game-board-min-tablet-landscape),min(62dvh,var(--game-board-max))) minmax(360px,1fr);
+  }
+  body.tutor-active .walkthrough-board-wrap{
+    width:clamp(var(--game-board-min-tablet-landscape),min(calc(100dvh - 154px),100%),var(--game-board-max));
+  }
+}
+@media (orientation:portrait){
+  body.tutor-active .walkthrough-board-wrap{
+    width:min(calc(100vw - 64px),calc(100dvh - 390px),var(--game-board-max));
+    max-width:none;
+  }
+  body.tutor-active .walkthrough-scroll{flex:1 1 0;max-height:none}
+}
+@media (orientation:portrait) and (min-width:768px) and (min-height:900px){
+  body.tutor-active .walkthrough-board-wrap{
+    width:clamp(var(--game-board-min-tablet-portrait),min(calc(100vw - 110px),calc(100dvh - 430px)),var(--game-board-max));
+  }
+}
+
+/* Coach remains an overlay so it never steals the minimum playable board.
+   Long reasoning scrolls inside the Coach card, never through the game page. */
+.hint-notice{
+  overscroll-behavior:contain;
+  max-height:min(66dvh,620px);
+}
+
+/* v3.1.8-B — shared coordinate frame. Coordinates remain outside business
+   cells, so renderer cell counts, keyboard navigation and puzzle state stay
+   unchanged. */
+.grid-coordinate-wrap{
+  display:grid;
+  grid-template-columns:clamp(17px,3vw,20px) minmax(0,1fr);
+  grid-template-rows:clamp(16px,2.5vw,18px) minmax(0,1fr);
+  gap:2px 3px;
+  align-items:stretch;
+}
+.grid-column-coordinates{
+  grid-column:2;
+  grid-row:1;
+  display:grid;
+  grid-template-columns:repeat(var(--grid-coordinate-cols),minmax(0,1fr));
+  align-items:end;
+  width:100%;
+  min-width:0;
+}
+.grid-row-coordinates{
+  grid-column:1;
+  grid-row:2;
+  display:grid;
+  grid-template-rows:repeat(var(--grid-coordinate-rows),minmax(0,1fr));
+  align-items:center;
+  height:100%;
+  min-height:0;
+}
+.grid-column-coordinates>span,
+.grid-row-coordinates>span{
+  display:grid;
+  place-items:center;
+  color:var(--muted);
+  font-size:clamp(10px,1.8vw,11px);
+  font-weight:700;
+  line-height:1;
+  letter-spacing:.01em;
+  user-select:none;
+}
+
+/* 844×390 LIGHTHOUSES compatibility: the 9×9 board itself must retain the
+   historical >=290px floor. The coordinate gutter therefore reserves 313px
+   while vertical chrome is compacted, rather than shrinking the cells. */
+@media (orientation:landscape) and (max-height:520px) and (min-width:600px){
+  body:has(#qboard) #app{padding-top:2px;padding-bottom:2px}
+  body:has(#qboard) .lighthouses-panel{padding-top:4px;padding-bottom:4px}
+  body:has(#qboard) .lighthouses-panel>.queens-coordinate-wrap{
+    width:min(313px,calc(100dvh - 77px));
+    max-width:min(313px,calc(100dvh - 77px));
+  }
+}

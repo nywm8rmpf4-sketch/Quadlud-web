@@ -8,6 +8,8 @@ const $=s=>document.querySelector(s), app=$('#app'), toast=$('#toast'), timerEl=
 const VERSION='3.1.7';
 const UI_FEATURES=Object.freeze({inlineRules:false,exploration:false,pause:false,liveTimer:false,unjustifiedHighlights:false,verifyAction:false});
 const WebPlatform=QuadludWebPlatform.getWebPlatform();
+const VictoryPresentation=QuadludVictoryPresentation.createController({document,window,random:()=>Math.random(),setTimer:(cb,ms)=>setTimeout(cb,ms),clearTimer:id=>clearTimeout(id)});
+let victoryOverlayTimer=null,victoryAnimationFrame=null;
 const DiagnosticRecorder=QuadludDiagnosticRecorder;
 const DiagnosticUiStructural=QuadludDiagnosticUiStructural;
 const DiagnosticAttachments=QuadludDiagnosticAttachments;
@@ -120,6 +122,12 @@ function applyPrefs(){let p=prefs(),theme=resolvedTheme();document.documentEleme
 function cycleTheme(){let p=prefs(),m={auto:'light',light:'dark',dark:'auto'};p.theme=m[p.theme];savePrefs(p);showToast(`${tr('themeLabel')} : ${{auto:tr('auto'),light:tr('light'),dark:tr('dark')}[p.theme]}`)}
 function toggleSound(){let p=prefs();p.sound=!p.sound;savePrefs(p);showToast(p.sound?tr('soundsOn'):tr('soundsOff'));return p.sound}
 function playTone(kind='tap'){if(!prefs().sound)return;try{let A=window.AudioContext||window.webkitAudioContext;if(!A)return;let c=new A(),o=c.createOscillator(),g=c.createGain(),now=c.currentTime;o.type='sine';o.frequency.value=kind==='win'?659:kind==='error'?180:420;g.gain.setValueAtTime(kind==='win'?.06:.025,now);g.gain.exponentialRampToValueAtTime(.001,now+(kind==='win'?.38:.12));o.connect(g);g.connect(c.destination);o.start(now);o.stop(now+(kind==='win'?.4:.13));setTimeout(()=>c.close().catch(()=>{}),600)}catch(_){}}
+function postVictoryReviewState(c=current){let r=c?.postVictoryReview;return r&&r.schema===1&&r.outcome==='solved'&&Number.isFinite(Number(r.officialSeconds))?r:null}
+function postVictoryReviewActive(c=current){let r=postVictoryReviewState(c);return !!(r?.active&&c?.statsClosed&&!c?.completed)}
+function postVictoryReviewCanUndo(c=current){let r=postVictoryReviewState(c),h=c?.moveHistory,n=h?.nodes?.[h?.cursor];return !!(c?.completed&&c?.statsClosed&&r&&!r.active&&n?.parent&&h.nodes?.[n.parent])}
+function dismissVictoryOverlay(restore=false){let root=$('#victory');if(root)a11yCloseDialog(root,restore)}
+function cancelVictoryPresentation(removeFinal=true){if(victoryAnimationFrame!=null){try{cancelAnimationFrame(victoryAnimationFrame)}catch(_){}victoryAnimationFrame=null}if(victoryOverlayTimer!=null){try{clearTimeout(victoryOverlayTimer)}catch(_){}victoryOverlayTimer=null}dismissVictoryOverlay(false);let board=document.querySelector('.board'),victoryClass=gameVictoryClass(current?.game);VictoryPresentation.cancel({removeFinal,board,victoryClass})}
+function freezePostVictoryReviewTimer(seconds=elapsedBase){stopTimer(false);elapsedBase=Math.max(0,Number(seconds)||0);startedAt=0;paused=false;renderTimer(false)}
 function settingsView(){
   if(current&&!current.completed)saveCurrent();stopTimer();resetTimerDisplay();current=null;let p=prefs();
   app.innerHTML=`<section class="panel settings-panel"><div class="stats-head"><div><h1>${tr('prefs')}</h1><p>${tr('settingsSaved')}</p></div><button class="btn" id="settingsBack">${tr('back')}</button></div>
@@ -159,7 +167,7 @@ async function shareResult(c,seconds){
   showToast(tr('shareUnavailable'))
 }
 function victoryOverlay(c,seconds){
-  let old=$('#victory');if(old)old.remove(),dailyRec=c.daily?dailyRecord(c.dailyDay,c.game):null,next=c.daily?dailyNextGame(c.dailyDay):null;
+  let old=$('#victory');if(old)a11yCloseDialog(old,false);let dailyRec=c.daily?dailyRecord(c.dailyDay,c.game):null,next=c.daily?dailyNextGame(c.dailyDay):null;
   let dailyScore=c.daily?`<div class="victory-daily-score"><span>${tr('dailyLogicScore')}</span><strong>${dailyRec?.logicScore??'—'}/100</strong><small>${dailyRec?.logicScore!=null?dailyHelpLabel(dailyRec.helpStage):tr('dailyUnscoredLegacy')}</small></div>`:'';
   let dailyAction=c.daily?`<button class="btn primary" id="dailyVictoryNext">${next?tr('dailyNextGame'):tr('dailyReport')}</button>`:'',challengeAction=c.challengeCode?`<button class="btn primary" id="victoryShareChallenge">↗ ${tr('shareChallenge')}</button>`:'';
   document.body.insertAdjacentHTML('beforeend',`<div class="victory" id="victory"><div class="victory-card"><div class="victory-burst" aria-hidden="true">✦</div><small>${tr('victoryKicker')}</small><h2>${gameLabel(c.game)}</h2><div class="victory-time">${fmt(seconds)}</div>${dailyScore}<p>${DIFF[c.diff]}${c.daily?` · ${tr('dailyLabel')}`:''}</p><div class="victory-actions">${dailyAction}${challengeAction}<button class="btn" id="shareResult">${tr('share')}</button><button class="btn" id="closeVictory">${tr('continue')}</button></div></div></div>`);
@@ -1061,9 +1069,9 @@ function puzzleSnapshot(){return SessionHistory.puzzleSnapshot(current)}
 function historySnapshotKey(s=puzzleSnapshot()){return SessionCore.snapshotKey(s)}
 function historyInit(force=false){return SessionHistory.ensureHistory(current,force)}
 function historyNode(){return SessionHistory.historyNode(current)}
-function historyCanUndo(){return SessionHistory.canUndo(current)}
+function historyCanUndo(){if(!current)return false;if(postVictoryReviewCanUndo(current))return true;return !current.completed&&!paused&&SessionHistory.canUndo(current)}
 function historyRedoTarget(){return SessionHistory.redoTarget(current)}
-function historyCanRedo(){return SessionHistory.canRedo(current)}
+function historyCanRedo(){return !!current&&!current.completed&&!paused&&SessionHistory.canRedo(current)}
 
 // ===== v2.19.1 — classify legal moves as justified deductions or hypotheses =====
 function reasoningAuditBucket(){
@@ -1320,30 +1328,27 @@ function historyRecord(action='MOVE',beforeKey=null){
 }
 function restorePuzzleSnapshot(s){
   if(!current||!s||s.game!==current.game)return false;
-  current.hintFlow=null;current.walkthroughResume=null;current.lastReasoning=null;current.lastError=null;current.lastMoveAudit=null;current.masteryPendingAid=null;clearHintFocus();clearErrorFocus();closeHintNotice();$('#victory')?.remove();
+  current.hintFlow=null;current.walkthroughResume=null;current.lastReasoning=null;current.lastError=null;current.lastMoveAudit=null;current.masteryPendingAid=null;clearHintFocus();clearErrorFocus();closeHintNotice();cancelVictoryPresentation(true);
   if(!SessionHistory.applyPuzzleSnapshot(current,s))return false;
   drawGameUi(current);
   status('',true);updateScoreFlags();return true
 }
 function undoMoves(count=1){
-  if(!current||current.completed||paused)return 0;
+  if(!current)return 0;let fromVictory=postVictoryReviewCanUndo(current);if(!fromVictory&&!historyCanUndo())return 0;
   let step=SessionHistory.undoHistory(current,count),moved=step.moved;if(!moved){updateHistoryButtons();return 0}
-  markBacktrack();restorePuzzleSnapshot(step.snapshot);syncErrorFromHistory();syncReasoningAuditFromHistory();trainingSyncPath();updateHistoryButtons();refreshExplorationPanel();diagnosticRecord('history.undo',{requested:count,moved,cursor:step.history.cursor});saveCurrent();haptic(7);return moved
+  if(fromVictory){let review=postVictoryReviewState(current);current.completed=false;review.active=true;review.lastReviewAt=WebPlatform.clock.nowMs();freezePostVictoryReviewTimer(review.officialSeconds)}
+  markBacktrack();restorePuzzleSnapshot(step.snapshot);syncErrorFromHistory();syncReasoningAuditFromHistory();trainingSyncPath();updateHistoryButtons();refreshExplorationPanel();diagnosticRecord('history.undo',{requested:count,moved,cursor:step.history.cursor,postVictoryReview:fromVictory});saveCurrent();haptic(7);return moved
 }
 function redoMoves(count=1){
-  if(!current||current.completed||paused)return 0;
+  if(!historyCanRedo())return 0;let reviewActive=postVictoryReviewActive(current);
   let step=SessionHistory.redoHistory(current,count),moved=step.moved;if(!moved){updateHistoryButtons();return 0}
-  restorePuzzleSnapshot(step.snapshot);syncErrorFromHistory();syncReasoningAuditFromHistory();trainingSyncPath();updateHistoryButtons();refreshExplorationPanel();diagnosticRecord('history.redo',{requested:count,moved,cursor:step.history.cursor});saveCurrent();haptic(7);return moved
+  restorePuzzleSnapshot(step.snapshot);syncErrorFromHistory();syncReasoningAuditFromHistory();trainingSyncPath();updateHistoryButtons();refreshExplorationPanel();diagnosticRecord('history.redo',{requested:count,moved,cursor:step.history.cursor,postVictoryReview:reviewActive});let refinished=reviewActive&&maybeAutoFinish();if(!refinished)saveCurrent();haptic(7);return moved
 }
-function updateHistoryButtons(){
-  let u=$('#undoBtn'),r=$('#redoBtn');
-  if(u)u.disabled=!current||current.completed||paused||!historyCanUndo();
-  if(r)r.disabled=!current||current.completed||paused||!historyCanRedo()
-}
+function updateHistoryButtons(){let u=$('#undoBtn'),r=$('#redoBtn');if(u)u.disabled=!historyCanUndo();if(r)r.disabled=!historyCanRedo()}
 function historySummary(){return SessionHistory.summary(current)}
 document.addEventListener('keydown',e=>{
   if(!(e.ctrlKey||e.metaKey)||String(e.key).toLowerCase()!=='z')return;
-  if(!current||paused||current.completed)return;e.preventDefault();
+  if(e.shiftKey){if(!historyCanRedo())return}else if(!historyCanUndo())return;e.preventDefault();
   if(e.shiftKey)redoMoves(1);else undoMoves(1)
 });
 
@@ -1383,12 +1388,19 @@ function persistenceCertifiedProfileValid(c,fingerprint){
   if(c.daily&&c.dailyFingerprint!==fingerprint)return false;
   return true
 }
+function persistencePostVictoryReviewValid(c,elapsed,isPaused){
+  let r=c?.postVictoryReview;if(r==null)return true;
+  if(!r||r.schema!==1||r.outcome!=='solved'||r.active!==true||c.completed||c.statsClosed!==true)return false;
+  if(!Number.isFinite(Number(r.officialSeconds))||Number(r.officialSeconds)<0||!Number.isFinite(Number(r.closedAt)))return false;
+  if(!Number.isInteger(Number(r.replayCount))||Number(r.replayCount)<0)return false;
+  return Number(elapsed)===Number(r.officialSeconds)&&isPaused===false
+}
 function persistencePayloadValid(x){
   if(!x||typeof x!=='object'||x.schema!==SAVE_SCHEMA||x.baseline!==PERSISTENCE_BASELINE||!x.current||typeof x.current!=='object')return false;
   let expected=persistenceContract(),contract=x.contract;if(!contract||contract.difficultySchema!==expected.difficultySchema||contract.ratingVersion!==expected.ratingVersion||contract.fingerprintVersion!==expected.fingerprintVersion)return false;
   let c=x.current;if(!GAME_IDS.includes(c.game)||!['easy','medium','hard','expert'].includes(c.diff)||c.completed||!persistenceHistoryValid(c))return false;
   let fingerprint=persistenceFingerprint(c);if((x.puzzleFingerprint||null)!==(fingerprint||null)||!persistenceCertifiedProfileValid(c,fingerprint))return false;
-  return Number.isFinite(Number(x.elapsed))&&Number(x.elapsed)>=0&&typeof x.paused==='boolean'
+  return Number.isFinite(Number(x.elapsed))&&Number(x.elapsed)>=0&&typeof x.paused==='boolean'&&persistencePostVictoryReviewValid(c,x.elapsed,x.paused)
 }
 function saveCurrent(){if(!current||current.completed||current.trainingCompleted)return;try{walkthroughSanitizeResumeForCurrent();let c=plainCurrent();if(!persistenceHistoryValid(c))return;let fingerprint=persistenceFingerprint(c);if(!persistenceCertifiedProfileValid(c,fingerprint))return;let payload=DataSerialization.createSaveEnvelope({schema:SAVE_SCHEMA,baseline:PERSISTENCE_BASELINE,version:VERSION,contract:persistenceContract(),puzzleFingerprint:fingerprint,current:c,elapsed:timerSeconds(),paused:!!paused,savedAt:WebPlatform.clock.nowMs()});PersistentData.save.write(payload)}catch(_){}}
 function getSaved(){return PersistentData.save.read({validate:persistencePayloadValid})}
@@ -1608,7 +1620,7 @@ function openWalkthrough(){
 function closeWalkthrough(){
   let s=walkthroughSession;if(!s||!current)return false;walkthroughPersistResume();let elapsed=s.elapsed,wasPaused=s.wasPaused;walkthroughSession=null;document.body.classList.remove('tutor-active');
   renderGameUi(current);
-  diagnosticRecord('tutor.close',{index:s.index,moves:s.moves.length,navigation:s.navigation});startTimer(true,elapsed,wasPaused);updatePauseButton();saveCurrent();return true
+  diagnosticRecord('tutor.close',{index:s.index,moves:s.moves.length,navigation:s.navigation});if(postVictoryReviewActive(current))freezePostVictoryReviewTimer(current.postVictoryReview.officialSeconds);else startTimer(true,elapsed,wasPaused);updatePauseButton();saveCurrent();return true
 }
 
 function shell(name,subtitle,diff,content,rules){let challengeTag=current?.challenge?` · <span class="challenge-shell-tag">↗ <b>${current.challengeCode}</b></span>`:'';let trainingTag=current?.learning?` · <span class="training-shell-tag">${tr('lesson')} ${current.learningPhase}/4 : <b>${techniqueTitle(current.learningTechnique)}</b></span>`:current?.training?` · <span class="training-shell-tag">${tr('trainingTarget')} : <b>${techniqueTitle(current.trainingTechnique)}</b></span>`:'';app.innerHTML=`<section class="panel"><div class="game-head"><div><h1>${name}</h1><p>${subtitle}${trainingTag}${challengeTag}${current?` · <span class="live-aids">${aidBadges(current,true)}</span>`:''}</p></div><select class="difficulty" id="difficulty" aria-label="${tr('difficulty')}">${Object.entries(DIFF).map(([k,v])=>`<option value="${k}" ${k===diff?'selected':''}>${v}</option>`).join('')}</select></div><div class="toolbar" role="group" aria-label="${tr('actions')}"><button class="btn primary" id="newBtn">${tr('newGame')}</button><button class="btn" id="resetBtn">${tr('reset')}</button><button class="btn history-action" id="undoBtn" title="${tr('undo')}" aria-label="${tr('undo')}">↶ ${tr('undo')}</button><button class="btn history-action" id="redoBtn" title="${tr('redo')}" aria-label="${tr('redo')}">↷ ${tr('redo')}</button>${UI_FEATURES.pause?`<button class="btn" id="pauseBtn">${tr('pause')}</button>`:''}${(UI_FEATURES.verifyAction||current?.training||current?.learning)?`<button class="btn" id="checkBtn">${tr('check')}</button>`:''}<button class="btn" id="hintBtn">${tr('logicCoach')}</button>${UI_FEATURES.exploration?`<button class="btn" id="exploreBtn">◇ ${tr('exploration')}</button>`:''}<button class="btn secondary-action" id="shareChallengeBtn" style="${current?.challenge?'':'display:none'}">↗ ${tr('shareChallenge')}</button><button class="btn tutor-action" id="walkthroughBtn">▹ ${tr('walkthrough')}</button><button class="btn secondary-action" id="solutionBtn">${tr('solution')}</button><button class="btn secondary-action" id="rulesBtn">${tr('rules')}</button><button class="btn secondary-action" id="techniquesBtn">${tr('techniques')}</button></div><div id="status" class="status" aria-live="polite"></div><div id="errorCoach" class="error-coach" hidden aria-live="polite"></div><div id="reasoningAudit" class="reasoning-audit" hidden aria-live="polite"></div>${UI_FEATURES.exploration?`<div id="explorationPanel" class="exploration-panel" hidden aria-live="polite"></div>`:''}<div id="learningGuide" class="learning-guide" hidden aria-live="polite"></div>${content}${UI_FEATURES.inlineRules?`<div class="rules">${rules}</div>`:''}</section>`;
@@ -1618,11 +1630,11 @@ function resetCurrent(){
   if(!current)return;
   if(current.training)return resetTrainingExercise();
   let hadProgress=SessionHistory.hasPuzzleProgress(current);if(hadProgress)markBacktrack();
-  $('#victory')?.remove();closeHintNotice();clearHintFocus();current.hintFlow=null;current.walkthroughResume=null;current.lastError=null;current.lastMoveAudit=null;current.exploration=null;clearErrorFocus();
+  cancelVictoryPresentation(true);closeHintNotice();clearHintFocus();current.hintFlow=null;current.walkthroughResume=null;current.lastError=null;current.lastMoveAudit=null;current.exploration=null;clearErrorFocus();
   if(!SessionHistory.resetPuzzleState(current))return;
   if(!resetGameUi(current))return;
   let wasCompleted=!!current.completed;
-  current.completed=false;
+  current.completed=false;delete current.postVictoryReview;
   if(wasCompleted||current.statsClosed){current.backtrackUsed=false;current.hintUsed=false;current.attemptId=null;current.statsClosed=false;statsStart(current)}
   stopTimer(false);elapsedBase=0;startedAt=0;paused=false;startTimer(true,0,false);historyInit(true);updateHistoryButtons();
   diagnosticRecord('session.reset',{hadProgress});saveCurrent();updatePauseButton();status('',true);showToast(tr('resetDone'));haptic(8)
@@ -1645,7 +1657,7 @@ function takePrecomputed(game,diff,day=localDay()){return WebPrecompute.take(gam
 function precomputeStatus(){return WebPrecompute.status()}
 
 function launch(game,diff){if(!GameRegistry.hasGame(game))throw new Error(`Unknown QUADLUD game: ${game}`);let previousGame=current?.game||null,previousDifficulty=current?.diff||null;closePreviousAttempt();clearSaved();stopTimer();paused=false;setBusy(true);current={game,diff};requestAnimationFrame(()=>{try{let candidate=normalLaunchCandidate(game,diff);installGeneratedSession(game,diff,candidate,{context:'normal'});historyInit(true);diagnosticStart('normal',{previousGame,previousDifficulty});updateHistoryButtons();statsStart(current);startTimer(true,0,false);saveCurrent();haptic(8)}finally{setBusy(false);startBackgroundPrecompute(game,diff)}})}
-function resumeSaved(){let s=getSaved();if(!s)return home();stopTimer();let c=DataSerialization.deserializeCurrentState(s.current);current=c;historyInit(false);renderGameUi(c);startTimer(true,s.elapsed||0,false);diagnosticStart('resume',{resumed:true});updatePauseButton();refreshExplorationPanel();showToast(tr('restored'));if(!c.training)startBackgroundPrecompute(c.game,c.diff)}
+function resumeSaved(){let s=getSaved();if(!s)return home();stopTimer();let c=DataSerialization.deserializeCurrentState(s.current);current=c;historyInit(false);renderGameUi(c);if(postVictoryReviewActive(c))freezePostVictoryReviewTimer(c.postVictoryReview.officialSeconds);else startTimer(true,s.elapsed||0,false);diagnosticStart('resume',{resumed:true});updatePauseButton();refreshExplorationPanel();showToast(tr('restored'));if(!c.training)startBackgroundPrecompute(c.game,c.diff)}
 
 
 
@@ -1808,16 +1820,7 @@ function maybeAutoFinish(){
   if(result.solved){finish(`${tr('congrats')} ${gameLabel(current.game)}`);return true}
   return false
 }
-function celebrateBoard(){
-  let board=document.querySelector('.board');if(!board)return;
-  board.classList.add('board-complete');
-  let victoryClass=gameVictoryClass(current?.game);if(victoryClass)board.classList.add(victoryClass);
-  [...board.children].forEach((cell,i)=>{cell.style.setProperty('--win-delay',`${Math.min(i,80)*16}ms`);cell.classList.add('win-pop')});
-  let layer=document.createElement('div');layer.className='celebration-layer';layer.setAttribute('aria-hidden','true');
-  for(let i=0;i<22;i++){let p=document.createElement('i');p.style.setProperty('--x',`${8+Math.random()*84}%`);p.style.setProperty('--dx',`${-55+Math.random()*110}px`);p.style.setProperty('--delay',`${Math.random()*220}ms`);p.style.setProperty('--rot',`${Math.random()*500-250}deg`);layer.appendChild(p)}
-  document.body.appendChild(layer);
-  setTimeout(()=>{layer.remove();board?.classList.remove('board-complete');board?.querySelectorAll('.win-pop').forEach(x=>{x.classList.remove('win-pop');x.style.removeProperty('--win-delay')})},1700)
-}
+function celebrateBoard(game=current?.game){let board=document.querySelector('.board');return VictoryPresentation.celebrate({gameId:game,board,victoryClass:gameVictoryClass(game)})}
 // 27.3 — registry-driven Web UI lifecycle. Game-specific renderer factories are resolved lazily through GameRegistry.
 let webGameUiAdapterCollection=null;
 function pedagogicalHintForGame(game){return gamePedagogy(game).coach.runHint()}
@@ -1867,7 +1870,21 @@ function resetGameUi(session=current){if(!session?.game)return false;return game
 function keyboardInput(e){if(!current?.game)return false;let handler=gameWebUi(current.game).keyboardInput;return typeof handler==='function'?handler(e):false}
 document.addEventListener('keydown',keyboardInput);
 function status(t,ok){let s=$('#status');if(!s)return;s.textContent=t;s.className='status '+(ok?'ok':'bad');if(!ok)playTone('error')}
-function finish(t,outcome='solved'){let total=timerSeconds(),snapshot=current?{...current}:null;stopTimer(false);elapsedBase=total;startedAt=0;paused=true;if(current){statsFinish(current,total,outcome);markDaily(current,outcome,total);current.completed=true;gamePedagogy(current.game).lifecycle.afterFinish({current})}clearSaved();renderTimer(true);status(`${t} — ${fmt(elapsedBase)}`,true);updatePauseButton();if(outcome==='solved'&&snapshot)requestAnimationFrame(()=>{celebrateBoard();setTimeout(()=>victoryOverlay(snapshot,total),2100)})}
+function finish(t,outcome='solved'){
+  let measured=timerSeconds(),review=postVictoryReviewState(current),reviewClosed=!!review&&current?.statsClosed===true,total=reviewClosed?review.officialSeconds:measured;
+  stopTimer(false);elapsedBase=total;startedAt=0;paused=true;
+  if(current){
+    if(!reviewClosed){statsFinish(current,measured,outcome);markDaily(current,outcome,measured)}
+    if(outcome==='solved'){
+      if(reviewClosed){review.active=false;review.replayCount=(review.replayCount||0)+1;review.lastReplayAt=WebPlatform.clock.nowMs()}
+      else current.postVictoryReview={schema:1,active:false,outcome:'solved',officialSeconds:measured,closedAt:WebPlatform.clock.nowMs(),replayCount:0}
+    }else if(reviewClosed){review.active=false;review.lastReviewAt=WebPlatform.clock.nowMs();review.lastReviewFinishOutcome=String(outcome||'')}
+    else delete current.postVictoryReview;
+    current.completed=true;gamePedagogy(current.game).lifecycle.afterFinish({current})
+  }
+  let snapshot=current?{...current}:null;clearSaved();renderTimer(true);status(`${t} — ${fmt(elapsedBase)}`,true);updatePauseButton();
+  if(outcome==='solved'&&snapshot){VictoryPresentation.playApplause({enabled:prefs().sound});victoryAnimationFrame=requestAnimationFrame(()=>{victoryAnimationFrame=null;celebrateBoard(snapshot.game);victoryOverlayTimer=setTimeout(()=>{victoryOverlayTimer=null;victoryOverlay(snapshot,total)},2100)})}
+}
 WebPlatform.lifecycle.onVisibilityChange(()=>{diagnosticRecord('lifecycle.visibility',{hidden:WebPlatform.lifecycle.isHidden()});if(WebPlatform.lifecycle.isHidden()&&current&&!current.completed)saveCurrent()});WebPlatform.lifecycle.onPageHide(()=>{if(current&&!current.completed)saveCurrent()});Diagnostic.attachGlobalErrors(window,()=>({reasoningView:diagnosticView(current)}));window.addEventListener('resize',()=>diagnosticRecord('viewport.resize',{viewport:{width:Math.max(0,Number(innerWidth)||0),height:Math.max(0,Number(innerHeight)||0)},dpr:Math.max(0,Number(devicePixelRatio)||1)}));window.addEventListener('orientationchange',()=>diagnosticRecord('viewport.orientation',{orientation:diagnosticOrientation()}));if(WebPlatform.serviceWorker.supported())WebPlatform.lifecycle.onLoad(()=>WebPlatform.serviceWorker.register('./sw.js').catch(()=>{}));
 discardLegacyPersistence();applyPrefs();try{window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{if(prefs().theme==='auto')applyPrefs()})}catch(_){}initialView();
 

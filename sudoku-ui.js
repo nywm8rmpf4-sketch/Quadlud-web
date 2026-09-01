@@ -28,6 +28,8 @@
       applyUnjustifiedHighlights,checkVictory,hint,finish,historySnapshotKey,
       closeHintNotice,clearHintFocus,historyRecord,saveCurrent
     }=deps;
+    const GridCoordinates=deps.gridCoordinates||root?.QuadludGridCoordinates;
+    if(!GridCoordinates||typeof GridCoordinates.markup!=='function'||typeof GridCoordinates.coordinateLabel!=='function')throw new Error('QUADLUD Grille 6 UI dependency unavailable: gridCoordinates');
     const sudokuIllegalCells=deps.sudokuIllegalCells||root?.sudokuIllegalCells;if(typeof sudokuIllegalCells!=='function')throw new Error('QUADLUD Grille 6 UI dependency unavailable: sudokuIllegalCells');
 
     function syncAccessibility(){
@@ -35,7 +37,8 @@
       if(!current||current.game!=='sudoku'||!board)return false;
       const selected=current.sel;
       [...board.children].forEach((cell,i)=>{
-        const r=Math.floor(i/6),c=i%6,value=current.state[r][c],parts=[a11yCoord(r,c)];
+        const r=Math.floor(i/6),c=i%6,value=current.state[r][c],parts=[GridCoordinates.coordinateLabel(r,c)];
+        cell.dataset.coordinate=GridCoordinates.coordinateLabel(r,c);
         if(value)parts.push(String(value));
         a11ySetCell(cell,r,c,parts.join(', '),{readonly:!current.empty.has(i),selected:!!selected&&selected[0]===r&&selected[1]===c})
       });
@@ -88,11 +91,13 @@
     }
 
     function render(session){
-      shell(gameLabel('sudoku'),`6×6 · 1–6 · ${tr('generated')}`,session.diff,`<div class="board-wrap"><div class="board sudoku" id="sboard" style="grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))"></div></div><div class="numpad" id="numpad" role="group" aria-label="${tr('placeDigit')}">${[1,2,3,4,5,6].map(n=>`<button data-n="${n}">${n}</button>`).join('')}<button data-n="0" aria-label="${tr('erase')}">⌫</button></div>`,gameRules('sudoku'));
+      const boardHtml='<div class="board sudoku" id="sboard" style="grid-column:2;grid-row:2;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))"></div>';
+      const coordinateBoard=GridCoordinates.markup(6,6,{className:'board-wrap grid-coordinate-wrap sudoku-coordinate-wrap',columnClass:'sudoku-column-coordinates',rowClass:'sudoku-row-coordinates',boardHtml});
+      shell(gameLabel('sudoku'),`6×6 · 1–6 · ${tr('generated')}`,session.diff,`${coordinateBoard}<div class="numpad" id="numpad" role="group" aria-label="${tr('placeDigit')}">${[1,2,3,4,5,6].map(n=>`<button data-n="${n}">${n}</button>`).join('')}<button data-n="0" aria-label="${tr('erase')}">⌫</button></div>`,gameRules('sudoku'));
       const board=query('#sboard');
       for(let r=0;r<6;r++)for(let c=0;c<6;c++){
         const fixed=!session.empty.has(r*6+c),cell=document.createElement('div');
-        cell.className='cell '+(fixed?'fixed ':'')+((c===2)?'boxR ':'')+((r===1||r===3)?'boxB ':'');
+        cell.className='cell '+(fixed?'fixed ':'')+((c===2)?'boxR ':'')+((r===1||r===3)?'boxB ':'');cell.dataset.coordinate=GridCoordinates.coordinateLabel(r,c);
         if(!fixed)cell.onclick=touchSave(()=>{getCurrent().sel=[r,c];draw()});
         board.appendChild(cell)
       }
