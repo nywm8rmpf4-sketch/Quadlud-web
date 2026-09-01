@@ -1,0 +1,72 @@
+name: Publish v3.1.8 A-F test build
+
+on:
+  push:
+    branches:
+      - publish/v3.1.8-A-F
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout public staging branch
+        uses: actions/checkout@v4
+        with:
+          ref: publish/v3.1.8-A-F
+          fetch-depth: 0
+
+      - name: Download exact private A-F artifact
+        env:
+          SOURCE_URL: 'https://sdmntpritalynorth.oaiusercontent.com/files/00000000-1094-8246-9122-5d7fd7130e5e/raw?se=2026-09-01T05%3A22%3A41Z&sp=r&sv=2026-02-06&sr=b&scid=64fd2c69-e341-5da9-9168-7c256172413a&skoid=7b771594-2b4f-4e93-93be-fdeeeb59aaf9&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-01T04%3A45%3A39Z&ske=2026-09-02T04%3A45%3A39Z&sks=b&skv=2026-02-06&sig=bYKAvzXn1aAhGUDoPxz9YthPl1loABvXYS9EtC5ZjSU%3D'
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 "$SOURCE_URL" -o /tmp/outer.zip
+          mkdir -p /tmp/outer /tmp/source
+          unzip -q /tmp/outer.zip -d /tmp/outer
+          unzip -q /tmp/outer/QUADLUD-v3.1.8-F-TEST-GitHub.zip -d /tmp/source
+          test -f /tmp/source/GitHub/LICENSE
+          test -f /tmp/source/GitHub/app.js
+          test -f /tmp/source/GitHub/victory-presentation.js
+          count="$(find /tmp/source/GitHub -maxdepth 1 -type f | wc -l | tr -d ' ')"
+          test "$count" = "94"
+
+      - name: Replace public runtime byte-for-byte
+        run: |
+          set -euo pipefail
+          rsync -a --delete --exclude='.git' --exclude='.github' /tmp/source/GitHub/ ./
+          test -f LICENSE
+          test -f index.html
+          test -f app.js
+          test -f victory-presentation.js
+          grep -q 'Copyright © 2026 Serge Benoliel' LICENSE
+          grep -q 'victory-presentation.js' index.html
+          grep -q "PROFILE_BY_GAME=Object.freeze({queens:LIGHTHOUSES_PROFILE})" victory-presentation.js
+
+      - name: Static checks
+        run: |
+          set -euo pipefail
+          node --check app.js
+          node --check victory-presentation.js
+          node --check game-registry.js
+          node --check game-ui-adapters.js
+          node --check coach-presentation-bridge.js
+          test "$(find . -maxdepth 1 -type f | wc -l | tr -d ' ')" = "94"
+
+      - name: Commit exact public runtime
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -f .github/workflows/publish-v318-af.yml .github/V318_AF_TRIGGER
+          rmdir .github 2>/dev/null || true
+          git add -A
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'No runtime changes to publish.'
+            exit 0
+          fi
+          git commit -m 'test: QUADLUD v3.1.8 A-F complete runtime'
+          git push origin HEAD:publish/v3.1.8-A-F
