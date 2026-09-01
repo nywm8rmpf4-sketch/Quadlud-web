@@ -31,7 +31,7 @@ jobs:
           test -f /tmp/source/GitHub/app.js
           test -f /tmp/source/GitHub/victory-presentation.js
           count="$(find /tmp/source/GitHub -maxdepth 1 -type f | wc -l | tr -d ' ')"
-          test "$count" = "94"
+          test "$count" = "93"
 
       - name: Replace public runtime byte-for-byte
         run: |
@@ -53,7 +53,7 @@ jobs:
           node --check game-registry.js
           node --check game-ui-adapters.js
           node --check coach-presentation-bridge.js
-          test "$(find . -maxdepth 1 -type f | wc -l | tr -d ' ')" = "94"
+          test "$(find . -maxdepth 1 -type f | wc -l | tr -d ' ')" = "93"
 
       - name: Commit exact public runtime
         run: |
@@ -61,6 +61,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           rm -f .github/workflows/publish-v318-af.yml .github/V318_AF_TRIGGER
+          rmdir .github/workflows 2>/dev/null || true
           rmdir .github 2>/dev/null || true
           git add -A
           git diff --cached --check
