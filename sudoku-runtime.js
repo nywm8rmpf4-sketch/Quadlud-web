@@ -67,7 +67,6 @@ function trainingBuildSudokuDirect(id,deadline){
   }
   return null
 }
-
 function sudokuReasoningPresenter(){return reasoningPresenter(globalThis.QuadludSudokuReasoningPresenter.GAME)}
 
 function sudokuLogicAvailable(){return typeof SudokuLogic!=='undefined'&&SudokuLogic?.createSession}
@@ -78,11 +77,13 @@ function sudokuLogicSession(c=current,state=null){if(!sudokuLogicAvailable())thr
 
 function sudokuFormat(key,vars={}){return String(tr(key)||key).replace(/\{([A-Za-z0-9_]+)\}/g,(_,k)=>vars[k]??'')}
 
+function sudokuCoordinate(r,c){let format=globalThis?.QuadludGridCoordinates?.coordinateLabel;return typeof format==='function'?format(r,c):cellName(r,c)}
+
 function sudokuUnitHuman(ref){if(!ref)return '';let name=ref.family==='row'?`${tr('rowLabel')} ${Number(ref.id)+1}`:ref.family==='column'?`${tr('columnLabel')} ${Number(ref.id)+1}`:`${tr('slgBox')} ${Number(ref.id)+1}`;if(lang()!=='fr')return name;return ref.family==='row'?`la ${name}`:ref.family==='column'?`la ${name}`:`le ${name}`}
 
 function sudokuUnitCells(ref){if(!ref)return [];if(ref.family==='row')return Array.from({length:6},(_,c)=>[Number(ref.id),c]);if(ref.family==='column')return Array.from({length:6},(_,r)=>[r,Number(ref.id)]);let br=Math.floor(Number(ref.id)/2)*2,bc=(Number(ref.id)%2)*3,out=[];for(let r=br;r<br+2;r++)for(let c=bc;c<bc+3;c++)out.push([r,c]);return out}
 
-function sudokuCellListHuman(cells,limit=8){let names=(cells||[]).map(c=>cellName(...c));return names.length<=limit?names.join(', '):names.slice(0,limit).join(', ')+` (+${names.length-limit})`}
+function sudokuCellListHuman(cells,limit=8){let names=(cells||[]).map(c=>sudokuCoordinate(...c));return names.length<=limit?names.join(', '):names.slice(0,limit).join(', ')+` (+${names.length-limit})`}
 
 function sudokuCurrentValueStep(){let session=sudokuLogicSession();return {session,...session.nextValueStep()}}
 
@@ -118,7 +119,7 @@ function walkthroughGenerateSudokuNext(){
   let info={
     rule:presentation.rule,technique:presentation.technique,rank:presentation.metadata.coachRank,techniqueLevel:presentation.techniqueLevel,target:[r,c],
     presentation,deduction:reasoning,logicDeduction:JSON.parse(JSON.stringify(primary)),finalDeduction:JSON.parse(JSON.stringify(result.deduction)),supportingDeductions:JSON.parse(JSON.stringify(result.supportingDeductions||[])),valueStep,
-    where:presentation.explanation.where,why:presentation.explanation.why,move:`${value.value} · ${cellName(r,c)}`,automatic:[],metrics:JSON.parse(JSON.stringify(result.metrics||{})),beforeSnapshot
+    where:presentation.explanation.where,why:presentation.explanation.why,move:`${value.value} · ${sudokuCoordinate(r,c)}`,automatic:[],metrics:JSON.parse(JSON.stringify(result.metrics||{})),beforeSnapshot
   };
   info.snapshot=walkthroughSnapshot(s.work);s.moves.push(info);s.sudokuStatus='value';s.metrics=info.metrics;
   if(walkthroughComplete()){s.done=true;s.total=s.moves.length}
@@ -154,7 +155,7 @@ function sudokuImmediateContradiction(){
 
 function sudokuContradictionDetail(){
   if(sudokuIllegalCells().size)return lang()==='fr'?'un chiffre est en conflit direct avec sa ligne, sa colonne ou son bloc.':'a digit directly conflicts with its row, column, or box.';
-  for(let r=0;r<6;r++)for(let c=0;c<6;c++)if(current.state[r][c]===0&&sudokuCandidatesAt(r,c).length===0)return lang()==='fr'?`${cellName(r,c)} n'aurait plus aucun chiffre possible.`:`${cellName(r,c)} would have no possible digit left.`;
+  for(let r=0;r<6;r++)for(let c=0;c<6;c++)if(current.state[r][c]===0&&sudokuCandidatesAt(r,c).length===0)return lang()==='fr'?`${sudokuCoordinate(r,c)} n'aurait plus aucun chiffre possible.`:`${sudokuCoordinate(r,c)} would have no possible digit left.`;
   let units=[];for(let r=0;r<6;r++)units.push({name:lang()==='fr'?`la ligne ${r+1}`:`row ${r+1}`,cells:Array.from({length:6},(_,c)=>[r,c])});
   for(let c=0;c<6;c++)units.push({name:lang()==='fr'?`la colonne ${c+1}`:`column ${c+1}`,cells:Array.from({length:6},(_,r)=>[r,c])});
   for(let br=0;br<6;br+=2)for(let bc=0;bc<6;bc+=3){let a=[];for(let r=br;r<br+2;r++)for(let c=bc;c<bc+3;c++)a.push([r,c]);units.push({name:lang()==='fr'?`le bloc L${br+1}-${br+2}/C${bc+1}-${bc+3}`:`box R${br+1}-${br+2}/C${bc+1}-${bc+3}`,cells:a})}
@@ -170,10 +171,10 @@ function findSudokuRank1Hint(){
     if(good.length===1&&bad.length){
       let lines=bad.map(v=>`• ${v} : ${details[v]}`).join('<br>');
       return {r,c,v:good[0],rank:1,
-        hypothesis:lang()==='fr'?`${cellName(r,c)} accepte d'abord les candidats ${cand.join(', ')}. Testons les autres possibilités.`:`${cellName(r,c)} initially allows candidates ${cand.join(', ')}. Test the alternatives.`,
+        hypothesis:lang()==='fr'?`${sudokuCoordinate(r,c)} accepte d'abord les candidats ${cand.join(', ')}. Testons les autres possibilités.`:`${sudokuCoordinate(r,c)} initially allows candidates ${cand.join(', ')}. Test the alternatives.`,
         consequence:lines,
         deadend:lang()==='fr'?`tous les candidats sauf ${good[0]} créent immédiatement une impossibilité.`:`every candidate except ${good[0]} immediately creates an impossibility.`,
-        conclusion:lang()==='fr'?`${cellName(r,c)} doit donc contenir ${good[0]}.`:`${cellName(r,c)} must therefore contain ${good[0]}.`,
+        conclusion:lang()==='fr'?`${sudokuCoordinate(r,c)} doit donc contenir ${good[0]}.`:`${sudokuCoordinate(r,c)} must therefore contain ${good[0]}.`,
         why:null}
     }
   }return null
@@ -187,8 +188,8 @@ function sudokuRank2WitnessAfterAssumption(){
       if(!bad)viable.push(v)
     }
     if(!viable.length)return {r,c,detail:lang()==='fr'
-      ?`${cellName(r,c)} n'a plus aucun chiffre possible.`
-      :`${cellName(r,c)} has no possible digit left.`}
+      ?`${sudokuCoordinate(r,c)} n'a plus aucun chiffre possible.`
+      :`${sudokuCoordinate(r,c)} has no possible digit left.`}
   }
   return null
 }
@@ -207,10 +208,10 @@ function findSudokuRank2Hint(){
     if(good.length===1&&bad.length){
       let v=good[0],rej=bad[0],w=witness[rej];
       return {r,c,v,rank:2,
-        hypothesis:lang()==='fr'?`supposons ${cellName(r,c)} = ${rej}.`:`suppose ${cellName(r,c)} = ${rej}.`,
+        hypothesis:lang()==='fr'?`supposons ${sudokuCoordinate(r,c)} = ${rej}.`:`suppose ${sudokuCoordinate(r,c)} = ${rej}.`,
         consequence:lang()==='fr'?`on recalcule les candidats des cases voisines et des unités concernées.`:`we recompute candidates in the affected cells and units.`,
         deadend:w.detail,
-        conclusion:lang()==='fr'?`${rej} est impossible en ${cellName(r,c)} ; le chiffre ${v} est imposé.`:`${rej} is impossible at ${cellName(r,c)}; digit ${v} is forced.`,
+        conclusion:lang()==='fr'?`${rej} est impossible en ${sudokuCoordinate(r,c)} ; le chiffre ${v} est imposé.`:`${rej} is impossible at ${sudokuCoordinate(r,c)}; digit ${v} is forced.`,
         why:null}
     }
   }

@@ -29,6 +29,8 @@
       a11ySetupGrid,a11yAnnounce,a11yCoord,a11ySetCell,applyConfiguredIllegalClasses,applyUnjustifiedHighlights,
       updateScoreFlags,checkVictory,hint,finish,showToast
     }=deps;
+    const GridCoordinates=deps.gridCoordinates||root?.QuadludGridCoordinates;
+    if(!GridCoordinates||typeof GridCoordinates.markup!=='function'||typeof GridCoordinates.coordinateLabel!=='function')throw new Error('QUADLUD Couronnes UI dependency unavailable: gridCoordinates');
     const regionColors=deps.regionColors||root?.QuadludQueensRuntime?.regionColors||['#F2D27E','#C9B5E4','#A9D6B2','#EFAFC0','#A6CDEA','#F0B78D','#91CCC5','#C8D99E','#B6BDE5'];
     const queenIllegalCells=deps.queenIllegalCells||root?.queenIllegalCells;if(typeof queenIllegalCells!=='function')throw new Error('QUADLUD Couronnes UI dependency unavailable: queenIllegalCells');
 
@@ -42,13 +44,6 @@
       cell.classList.remove('lighthouse-cell-enter');
       nextFrame(()=>{if(!cell.isConnected)return;void cell.offsetWidth;nextFrame(()=>{if(!cell.isConnected)return;cell.classList.add('lighthouse-cell-enter');cell.addEventListener('animationend',()=>cell.classList.remove('lighthouse-cell-enter'),{once:true})})});
       return true
-    }
-
-    function coordinateMarkup(n){
-      const labelStyle='display:grid;place-items:center;color:var(--muted);font-size:clamp(10px,1.8vw,11px);font-weight:700;line-height:1;letter-spacing:.01em;user-select:none';
-      const columns=Array.from({length:n},(_,i)=>`<span style="${labelStyle}">${i+1}</span>`).join('');
-      const rows=Array.from({length:n},(_,i)=>`<span style="${labelStyle}">${String.fromCharCode(65+i)}</span>`).join('');
-      return `<div class="queens-column-coordinates" aria-hidden="true" style="grid-column:2;grid-row:1;display:grid;align-items:end;width:100%;min-width:0;grid-template-columns:repeat(${n},minmax(0,1fr))">${columns}</div><div class="queens-row-coordinates" aria-hidden="true" style="grid-column:1;grid-row:2;display:grid;align-items:center;height:100%;min-height:0;grid-template-rows:repeat(${n},minmax(0,1fr))">${rows}</div>`
     }
 
     function autoCrossEnabled(){return getPrefs().queenAutoCross===true}
@@ -93,6 +88,7 @@
         const r=Math.floor(i/current.n),c=i%current.n,value=current.state[r][c],parts=[a11yCoord(r,c)];
         if(value===2)parts.push(tr('queenPlaced'));else if(value===1)parts.push('×');
         parts.push(`${tr('zone')} ${current.reg[r][c]+1}`);
+        cell.dataset.coordinate=GridCoordinates.coordinateLabel(r,c);
         a11ySetCell(cell,r,c,parts.join(', '))
       });
       return true
@@ -130,7 +126,9 @@
 
     function render(session){
       const colors=regionColors;
-      shell(gameLabel('queens'),`${tr('queensSub')} · ${session.n}×${session.n} · ${difficultyLabel(session.diff)} · ${tr('generated')}`,session.diff,`<div class="queen-options"><label class="switch-row"><input type="checkbox" id="queenAutoCross" ${autoCrossEnabled()?'checked':''}><span>${tr('autoCross')}</span></label></div><div class="board-wrap queens-coordinate-wrap" style="display:grid;grid-template-columns:clamp(17px,3vw,20px) minmax(0,1fr);grid-template-rows:clamp(16px,2.5vw,18px) minmax(0,1fr);gap:2px 3px;align-items:stretch">${coordinateMarkup(session.n)}<div class="board" id="qboard" style="grid-column:2;grid-row:2;grid-template-columns:repeat(${session.n},minmax(0,1fr));grid-template-rows:repeat(${session.n},minmax(0,1fr))"></div></div>`,gameRules('queens'));
+      const boardHtml=`<div class="board" id="qboard" style="grid-column:2;grid-row:2;grid-template-columns:repeat(${session.n},minmax(0,1fr));grid-template-rows:repeat(${session.n},minmax(0,1fr))"></div>`;
+      const coordinateBoard=GridCoordinates.markup(session.n,session.n,{className:'board-wrap grid-coordinate-wrap queens-coordinate-wrap',columnClass:'queens-column-coordinates',rowClass:'queens-row-coordinates',boardHtml});
+      shell(gameLabel('queens'),`${tr('queensSub')} · ${session.n}×${session.n} · ${difficultyLabel(session.diff)} · ${tr('generated')}`,session.diff,`<div class="queen-options"><label class="switch-row"><input type="checkbox" id="queenAutoCross" ${autoCrossEnabled()?'checked':''}><span>${tr('autoCross')}</span></label></div>${coordinateBoard}`,gameRules('queens'));
       const panel=query('.panel'),title=query('.game-head h1');
       panel?.classList.add('lighthouses-panel');
       title?.classList.add('lighthouses-title');
@@ -164,7 +162,7 @@
       }
 
       for(let r=0;r<session.n;r++)for(let c=0;c<session.n;c++){
-        const cell=document.createElement('div');cell.className='cell';cell.style.background=colors[session.reg[r][c]%colors.length];cell.dataset.r=r;cell.dataset.c=c;board.appendChild(cell)
+        const cell=document.createElement('div');cell.className='cell';cell.style.background=colors[session.reg[r][c]%colors.length];cell.dataset.r=r;cell.dataset.c=c;cell.dataset.coordinate=GridCoordinates.coordinateLabel(r,c);board.appendChild(cell)
       }
 
       a11ySetupGrid(board,session.n,session.n,{activate:cell=>{

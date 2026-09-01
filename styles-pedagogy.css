@@ -444,3 +444,24 @@ body.tutor-active .walkthrough-actions-top{margin:4px 0 7px}
 /* v2.21.15 — Rectangles : les alertes "non justifié" recolorent uniquement le périmètre réel, jamais les séparations internes. */
 /* v2.21.16 — Rectangles : indices dimensionnés depuis la taille réelle des cellules, y compris tablette et Tuteur. */
 
+/* v3.1.8-D4 — personas statiques Coach/Tuteur */
+.pedagogy-persona{
+  display:inline-grid;
+  place-items:center;
+  width:36px;
+  height:36px;
+  min-width:36px;
+  box-sizing:border-box;
+  flex:0 0 36px;
+  overflow:hidden;
+  border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);
+  border-radius:50%;
+  background:color-mix(in srgb,var(--accent) 12%,var(--paper));
+  font-size:24px;
+  line-height:1
+}
+.pedagogy-persona-coach{float:left;margin:0 9px 5px 0}
+.pedagogy-persona-tutor{float:left;margin:0 10px 3px 0}
+[dir="rtl"] .pedagogy-persona-coach,[dir="rtl"] .pedagogy-persona-tutor{float:right;margin-right:0;margin-left:9px}
+@media(max-width:390px){.pedagogy-persona{width:34px;height:34px;min-width:34px;flex-basis:34px;font-size:22px}}
+@media(forced-colors:active){.pedagogy-persona{background:Canvas;border-color:CanvasText;color:CanvasText}}

@@ -3,15 +3,18 @@
 .nonogram-tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;width:min(100%,620px);margin:8px auto 10px}
 .nonogram-tools .ng-tool{min-height:44px;padding:9px 8px;white-space:nowrap}
 .nonogram-tools .ng-tool[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent)}
-.nonogram-layout{display:grid;grid-template-columns:max-content minmax(0,1fr);grid-template-rows:max-content minmax(0,1fr);width:min(100%,620px);margin:0 auto;align-items:stretch;overflow:visible}
-.ng-corner{grid-column:1;grid-row:1}
-.ng-col-clues{grid-column:2;grid-row:1;display:grid;grid-template-columns:repeat(var(--ng-cols),minmax(0,1fr));align-items:end;min-width:0}
-.ng-row-clues{grid-column:1;grid-row:2;display:grid;grid-template-rows:repeat(var(--ng-rows),minmax(0,1fr));min-height:0}
+.nonogram-layout{display:grid;grid-template-columns:clamp(17px,3vw,20px) max-content minmax(0,1fr);grid-template-rows:clamp(16px,2.5vw,18px) max-content minmax(0,1fr);gap:2px 3px;width:min(100%,620px);margin:0 auto;align-items:stretch;overflow:visible}
+.ng-grid-column-coordinates{grid-column:3;grid-row:1;display:grid;grid-template-columns:repeat(var(--ng-cols),minmax(0,1fr));align-items:end;min-width:0}
+.ng-grid-row-coordinates{grid-column:1;grid-row:3;display:grid;grid-template-rows:repeat(var(--ng-rows),minmax(0,1fr));align-items:center;min-height:0}
+.ng-grid-column-coordinates>span,.ng-grid-row-coordinates>span{display:grid;place-items:center;color:var(--muted);font-size:clamp(10px,1.8vw,11px);font-weight:700;line-height:1;letter-spacing:.01em;user-select:none}
+.ng-corner{grid-column:2;grid-row:2}
+.ng-col-clues{grid-column:3;grid-row:2;display:grid;grid-template-columns:repeat(var(--ng-cols),minmax(0,1fr));align-items:end;min-width:0}
+.ng-row-clues{grid-column:2;grid-row:3;display:grid;grid-template-rows:repeat(var(--ng-rows),minmax(0,1fr));min-height:0}
 .ng-col-clue,.ng-row-clue{font:700 clamp(9px,2.7vw,13px)/1.05 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink)}
 .ng-col-clue{display:flex;min-width:0;min-height:42px;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px;padding:2px 1px 5px;text-align:center}
 .ng-row-clue{display:flex;align-items:center;justify-content:flex-end;gap:3px;min-width:34px;max-width:72px;padding:1px 6px 1px 1px;white-space:nowrap}
 .ng-clue-token{display:inline-block;min-width:.75em;text-align:center;border-radius:4px}
-.nonogram-board{grid-column:2;grid-row:2;display:grid!important;grid-template-columns:repeat(var(--ng-cols),minmax(0,1fr));grid-template-rows:repeat(var(--ng-rows),minmax(0,1fr));aspect-ratio:var(--ng-cols)/var(--ng-rows);width:100%;min-width:0;background:var(--paper);touch-action:manipulation!important}
+.nonogram-board{grid-column:3;grid-row:3;display:grid!important;grid-template-columns:repeat(var(--ng-cols),minmax(0,1fr));grid-template-rows:repeat(var(--ng-rows),minmax(0,1fr));aspect-ratio:var(--ng-cols)/var(--ng-rows);width:100%;min-width:0;background:var(--paper);touch-action:manipulation!important}
 .nonogram-board>.ng-cell{font:800 clamp(14px,4.8vw,25px)/1 system-ui,sans-serif;color:var(--ng-empty);background:var(--paper);touch-action:manipulation!important;-webkit-tap-highlight-color:transparent}
 .nonogram-board>.ng-cell.ng-filled{background:var(--ng-fill);color:var(--paper)}
 .nonogram-board>.ng-cell.ng-empty{background:color-mix(in srgb,var(--paper) 92%,var(--ink));color:var(--ng-empty)}
@@ -33,6 +36,11 @@
   .ng-row-clue{max-width:56px;min-width:30px;padding-right:4px;gap:2px}.ng-col-clue{min-height:38px;padding-bottom:4px}
   .ng-col-clue,.ng-row-clue{font-size:clamp(8px,2.6vw,11px)}
 }
+@media(max-width:360px){
+  .nonogram-layout{grid-template-columns:10px max-content minmax(0,1fr);column-gap:1px}
+  .ng-row-clue{min-width:24px;max-width:50px;padding-right:2px;gap:1px}
+  .ng-grid-column-coordinates>span,.ng-grid-row-coordinates>span{font-size:9px}
+}
 @media(max-width:520px){
   .panel:has(.nonogram-game){padding-top:10px}
   .panel:has(.nonogram-game) .game-head{margin-bottom:4px}
@@ -45,10 +53,10 @@
   .ng-row-clue{padding-right:3px}
   .nonogram-legend{display:none}
 }
+@media(max-width:360px){.ng-row-clue{padding-right:2px}}
 @media(pointer:coarse){.nonogram-board>.ng-cell{touch-action:manipulation!important}.nonogram-tools .ng-tool{min-height:44px}}
 @media(prefers-reduced-motion:reduce){.nonogram-tools .ng-tool,.nonogram-board>.ng-cell{transition:none!important}}
 @media(forced-colors:active){
   .nonogram-board,.nonogram-board>.ng-cell{border-color:CanvasText!important}.nonogram-board>.ng-cell.ng-filled{background:CanvasText!important;color:Canvas!important;forced-color-adjust:none}
-  .nonogram-board>.ng-cell.ng-empty{background:Canvas!important;color:CanvasText!important}.ng-clue-token,.ng-row-clue,.ng-col-clue{color:CanvasText!important}
+  .nonogram-board>.ng-cell.ng-empty{background:Canvas!important;color:CanvasText!important}.ng-clue-token,.ng-row-clue,.ng-col-clue,.ng-grid-column-coordinates,.ng-grid-row-coordinates{color:CanvasText!important}
 }
-

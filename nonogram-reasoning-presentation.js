@@ -79,13 +79,17 @@ function contradictionAnalysis(w){
 function formatTemplate(text,vars={}){return String(text??'').replace(/\{([A-Za-z0-9_]+)\}/g,(_,k)=>vars[k]??'')}
 function createPresenter(options={}){
   const rawTr=typeof options.tr==='function'?options.tr:null;
+  const gridCoordinates=options.gridCoordinates||(typeof globalThis!=='undefined'?globalThis.QuadludGridCoordinates:null);
+  const coordinateLabel=typeof options.cellName==='function'?options.cellName:(r,c)=>gridCoordinates&&typeof gridCoordinates.coordinateLabel==='function'?gridCoordinates.coordinateLabel(r,c):`r${Number(r)}c${Number(c)}`;
+  const rowCoordinate=i=>gridCoordinates&&typeof gridCoordinates.rowLabel==='function'?gridCoordinates.rowLabel(Number(i)):String(Number(i)+1);
+  const columnCoordinate=i=>gridCoordinates&&typeof gridCoordinates.columnLabel==='function'?gridCoordinates.columnLabel(Number(i)):String(Number(i)+1);
   const text=(key,vars={})=>{
     let value=rawTr?rawTr(key):null;
     if(typeof value!=='string'||!value||value===key)value=FALLBACK_TEXT[key]??TECHNIQUE_TITLES[key]??key;
     return formatTemplate(value,vars)
   };
-  const lineLabel=line=>`${text(line?.axis==='column'?'columnLabel':'rowLabel')} ${Number(line?.index)+1}`;
-  const cellLabel=ref=>ref?.id||'cell';
+  const lineLabel=line=>`${text(line?.axis==='column'?'columnLabel':'rowLabel')} ${line?.axis==='column'?columnCoordinate(line?.index):rowCoordinate(line?.index)}`;
+  const cellLabel=ref=>{const m=/^r(\d+)c(\d+)$/.exec(String(ref?.id||''));return m?coordinateLabel(Number(m[1]),Number(m[2])):ref?.id||'cell'};
   const techniqueTitle=rule=>text(rule)||String(rule||'Logical deduction');
   const whereText=d=>`${lineLabel(d.line)} — ${text('ngClue')} ${clueText(d.clues)}.`;
   function whyText(d){
@@ -127,7 +131,7 @@ function createPresenter(options={}){
     })
   }
   function contradictionText(w){if(!w)return '';const a=contradictionAnalysis(w),count=a?.cluePlacementCount??0;if(!rawTr)return `${lineLabel(w.line)} has no placement compatible with clue ${clueText(w.clues)} and the visible marks. The clue permits ${count} placement${count===1?'':'s'} before visible marks; every one conflicts with at least one visible cell.`;return text('ngContradictionWhy',{line:lineLabel(w.line),clue:clueText(w.clues),count})}
-  function contradictionDetailHtml(a){if(!a||a.cluePlacementCount<1||a.cluePlacementCount>PLACEMENT_DETAIL_LIMIT)return '';return a.rejectedPlacements.map((item,i)=>`${i+1}. ${placementBits(String(item.bits).split('').map(Number))} × ${item.conflicts.map(c=>c.cell?.id||c.index).join(', ')}`).join(' · ')}
+  function contradictionDetailHtml(a){if(!a||a.cluePlacementCount<1||a.cluePlacementCount>PLACEMENT_DETAIL_LIMIT)return '';return a.rejectedPlacements.map((item,i)=>`${i+1}. ${placementBits(String(item.bits).split('').map(Number))} × ${item.conflicts.map(c=>cellLabel(c.cell)||c.index).join(', ')}`).join(' · ')}
   function contradictionExplanation(w){const a=contradictionAnalysis(w);if(!a)return null;const base=contradictionText(w),detail=contradictionDetailHtml(a);return freezeDeep({title:techniqueTitle('N_CONTRADICTION'),where:`${lineLabel(w.line)} — ${text('ngClue')} ${clueText(w.clues)}.`,why:detail?`${base}<br>${detail}`:base,focus:clone(a.focus),analysis:clone(a),placementDetailShown:!!detail})}
   return Object.freeze({GAME,SOURCE,VERSION,techniqueTitle,focusForDeduction,engineDeduction,signature,whereText,whyText,moveText,explanation,legacyReasoning,presentation,contradictionFocus,contradictionAnalysis,contradictionExplanation,contradictionText,text})
 }

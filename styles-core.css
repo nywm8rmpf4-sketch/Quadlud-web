@@ -356,52 +356,8 @@ body.busy{pointer-events:none}
 :root[data-theme="dark"] #qboard .lighthouse-svg{filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
 :root[data-theme="dark"] #qboard.queens-win .lighthouse-svg{filter:drop-shadow(0 0 4px rgba(241,184,75,.7)) drop-shadow(0 0 9px rgba(241,184,75,.34))}
 
-
-/* v3.1.5-LH6 — premium LIGHTHOUSES theme; selectors remain Queens/Lighthouses-only */
-body:has(#qboard){background-color:#5f7f98}
-body:has(#qboard) .topbar{
-  background:#0b2948;
-  border-bottom-color:rgba(255,255,255,.16);
-  color:#f8fbff;
-  box-shadow:0 6px 22px rgba(5,25,45,.18);
-}
-body:has(#qboard) .topbar .brand,
-body:has(#qboard) .topbar .timer,
-body:has(#qboard) .topbar .icon-btn{color:#f8fbff}
-body:has(#qboard) .topbar .brand-dot{
-  background:#f1b84b;
-  box-shadow:0 0 0 3px rgba(241,184,75,.13),0 0 12px rgba(241,184,75,.28);
-}
-.lighthouses-panel{
-  background-color:#5f7f98;
-  background-image:linear-gradient(180deg,rgba(255,255,255,.075),rgba(11,41,72,.045));
-  border-color:rgba(255,255,255,.18);
-  color:#f8fbff;
-  box-shadow:0 18px 44px rgba(5,25,45,.22);
-}
-.lighthouses-panel .game-head h1{
-  display:flex;
-  align-items:center;
-  gap:9px;
-  color:#fff;
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
-  font-weight:800;
-  letter-spacing:.045em;
-  text-shadow:0 1px 2px rgba(5,25,45,.18);
-}
-.lighthouses-panel .game-head p{color:#e3edf4}
-.lighthouses-panel .difficulty{
-  background:#fffaf0;
-  border-color:rgba(11,41,72,.22);
-  color:#0b2948;
-  box-shadow:0 2px 9px rgba(5,25,45,.10);
-}
-.lighthouses-panel .switch-row{color:#e7f0f6}
-.lighthouses-panel .switch-row input{background:#d5e0e8;border-color:rgba(11,41,72,.22)}
-.lighthouses-panel .switch-row input:checked{background:#0b2948}
-.lighthouses-panel .queens-column-coordinates span,
-.lighthouses-panel .queens-row-coordinates span{color:#eef5f9!important;text-shadow:0 1px 1px rgba(5,25,45,.14)}
-
+/* v3.1.8-C — LIGHTHOUSES inherits the common shell; only identity and geometry remain specialized */
+.lighthouses-panel .game-head h1{display:flex;align-items:center;gap:9px}
 .lighthouses-panel .toolbar .secondary-action{display:none}
 .lighthouses-panel .toolbar #rulesBtn{display:block}
 @media(orientation:landscape) and (max-height:520px){
@@ -433,16 +389,14 @@ body:has(#qboard) .topbar .brand-dot{
 .lighthouses-title-svg .lh-beam{fill:#f1b84b;opacity:.30}
 @media(max-width:520px){
   .lighthouses-panel .game-head{gap:8px}
-  .lighthouses-panel .game-head h1{font-size:25px;letter-spacing:.035em}
   .lighthouses-title-icon{width:27px;height:27px;flex-basis:27px}
 }
 @media(max-width:350px){
   .lighthouses-panel .game-head>div{min-width:0;flex:1 1 auto}
-  .lighthouses-panel .game-head h1{font-size:22px;gap:6px;letter-spacing:.025em}
+  .lighthouses-panel .game-head h1{font-size:22px;gap:6px}
   .lighthouses-panel .difficulty{max-width:70px;padding:6px 3px;font-size:11px}
   .lighthouses-title-icon{width:25px;height:25px;flex-basis:25px}
 }
-
 
 /* v3.1.5-LH8B — tutor board must render visible lighthouse SVG pieces too */
 .walkthrough-board .queen,
@@ -534,4 +488,15 @@ body .panel .toolbar .btn{min-height:44px;border-radius:12px}
   .btn{background:ButtonFace;color:ButtonText;border-color:ButtonText;box-shadow:none}
   .btn.primary{background:Highlight;color:HighlightText;border-color:Highlight;box-shadow:none}
   .btn:disabled{color:GrayText;border-color:GrayText;box-shadow:none}
+}
+/* v3.1.8-F2 TEST BUILD — LIGHTHOUSES victory presentation. */
+.lighthouses-victory-layer{position:fixed;left:var(--lh-board-left);top:var(--lh-board-top);width:var(--lh-board-width);height:var(--lh-board-height);z-index:115;overflow:hidden;pointer-events:none}
+.lighthouses-victory-layer .lighthouses-victory-origin{position:absolute;left:var(--lh-x);top:var(--lh-y);width:0;height:0;transform-origin:center;animation:lighthouseVictorySweep 1500ms linear both}
+.lighthouses-victory-layer .lighthouses-victory-beam{position:absolute;left:0;top:0;width:var(--lh-range);height:clamp(8px,1.55vw,14px);border-radius:999px;transform-origin:0 50%;clip-path:polygon(0 36%,100% 0,100% 100%,0 64%);background:linear-gradient(90deg,rgba(255,244,184,.92),rgba(241,184,75,.48) 55%,rgba(241,184,75,0));filter:drop-shadow(0 0 5px rgba(241,184,75,.5));opacity:0;transform:translateY(-50%) rotate(var(--lh-angle)) scaleX(.04);animation:lighthouseVictoryBeam 1500ms ease-in-out both}
+@keyframes lighthouseVictorySweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes lighthouseVictoryBeam{0%{opacity:0;transform:translateY(-50%) rotate(var(--lh-angle)) scaleX(.04)}18%{opacity:.38;transform:translateY(-50%) rotate(var(--lh-angle)) scaleX(.34)}48%{opacity:.94;transform:translateY(-50%) rotate(var(--lh-angle)) scaleX(1)}72%{opacity:.62;transform:translateY(-50%) rotate(var(--lh-angle)) scaleX(.82)}100%{opacity:0;transform:translateY(-50%) rotate(var(--lh-angle)) scaleX(.06)}}
+#qboard.lighthouses-victory-reduced .lighthouse-halo.lighthouses-victory-halo{opacity:1!important}
+@media(prefers-reduced-motion:reduce){
+  #qboard .lighthouses-victory-layer,#qboard .lighthouses-victory-origin,.lighthouses-victory-layer .lighthouses-victory-beam{display:none!important;animation:none!important}
+  #qboard.lighthouses-victory-reduced .lighthouse-halo.lighthouses-victory-halo{opacity:1!important;animation:none!important}
 }

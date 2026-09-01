@@ -7,13 +7,37 @@
 (function(root,factory){
   const api=factory();
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
-  if(root)root.QuadludGameUiAdapters=api;
+  if(root){root.QuadludGameUiAdapters=api;root.QuadludGridCoordinates=api.GridCoordinates}
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
 
   const VERSION=3;
   const REQUIRED_METHODS=Object.freeze(['render','draw','reset']);
   const ENTITY_METHODS=Object.freeze(['resolveEntity','focusEntities']);
+
+  function gridRowLabel(index){
+    let n=Number(index);
+    if(!Number.isInteger(n)||n<0)throw new TypeError('QUADLUD grid row index must be a non-negative integer');
+    let out='';
+    do{out=String.fromCharCode(65+(n%26))+out;n=Math.floor(n/26)-1}while(n>=0);
+    return out
+  }
+  function gridColumnLabel(index){
+    const n=Number(index);
+    if(!Number.isInteger(n)||n<0)throw new TypeError('QUADLUD grid column index must be a non-negative integer');
+    return String(n+1)
+  }
+  function gridCoordinateLabel(row,column){return `${gridRowLabel(row)}${gridColumnLabel(column)}`}
+  function gridSafeClass(value){return String(value||'').trim().replace(/[^A-Za-z0-9_-]+/g,' ')}
+  function gridCoordinateMarkup(rows,columns,{className='grid-coordinate-wrap',boardHtml='',cornerHtml='',columnClass='',rowClass=''}={}){
+    rows=Number(rows);columns=Number(columns);
+    if(!Number.isInteger(rows)||rows<1||!Number.isInteger(columns)||columns<1)throw new TypeError('QUADLUD grid dimensions must be positive integers');
+    const cols=Array.from({length:columns},(_,i)=>`<span>${gridColumnLabel(i)}</span>`).join('');
+    const rowLabels=Array.from({length:rows},(_,i)=>`<span>${gridRowLabel(i)}</span>`).join('');
+    const colClass=`grid-column-coordinates${columnClass?` ${gridSafeClass(columnClass)}`:''}`,rowsClass=`grid-row-coordinates${rowClass?` ${gridSafeClass(rowClass)}`:''}`;
+    return `<div class="${gridSafeClass(className)}" style="--grid-coordinate-cols:${columns};--grid-coordinate-rows:${rows}">${cornerHtml}<div class="${colClass}" aria-hidden="true">${cols}</div><div class="${rowsClass}" aria-hidden="true">${rowLabels}</div>${boardHtml}</div>`
+  }
+  const GridCoordinates=Object.freeze({VERSION:1,rowLabel:gridRowLabel,columnLabel:gridColumnLabel,coordinateLabel:gridCoordinateLabel,markup:gridCoordinateMarkup});
 
   function normalizeId(id){
     if(typeof id!=='string'||!id.trim())throw new TypeError('QUADLUD Web UI adapter id must be a non-empty string');
@@ -48,5 +72,5 @@
     return Object.freeze({ids:frozenIds,has,require:requireAdapter,resolveEntity,focusEntities})
   }
 
-  return Object.freeze({VERSION,REQUIRED_METHODS,ENTITY_METHODS,createCollection})
+  return Object.freeze({VERSION,REQUIRED_METHODS,ENTITY_METHODS,GridCoordinates,createCollection})
 });

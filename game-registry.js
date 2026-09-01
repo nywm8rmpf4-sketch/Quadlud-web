@@ -30,6 +30,18 @@
     };
     const frozen=Object.freeze(proxy);return ()=>frozen
   }
+  function reasoningLifecycleCapability(globalName,nodePath){
+    const frozen=Object.freeze({createPresenter:(options={})=>{
+      const module=resolveModule(globalName,nodePath),fn=module?.createPresenter;
+      if(typeof fn!=='function')throw new Error(`QUADLUD game capability dependency unavailable: ${globalName}.createPresenter`);
+      const gridCoordinates=root?.QuadludGridCoordinates;
+      const presenterOptions=gridCoordinates&&typeof gridCoordinates.coordinateLabel==='function'
+        ?{...options,gridCoordinates,cellName:(r,c)=>gridCoordinates.coordinateLabel(r,c)}
+        :options;
+      return fn(presenterOptions)
+    }});
+    return ()=>frozen
+  }
   const BINDINGS=Object.freeze({
     queens:Object.freeze({logic:'QueensLogic',difficulty:'QueensDifficulty',generator:'QuadludQueensGenerator',generate:'generateQueensPuzzle',ui:'QuadludQueensUI',pedagogy:'QuadludQueensPedagogy',reasoning:'QuadludQueensReasoningPresenter',i18n:'QuadludQueensI18n',generationIdentity:'generationIdentity',challengeGeneratorVersion:'challengeGeneratorVersion'}),
     tango:Object.freeze({logic:'TangoLogic',difficulty:'TangoDifficulty',generator:'QuadludTangoGenerator',generate:'generateTangoPuzzle',ui:'QuadludTangoUI',pedagogy:'QuadludTangoPedagogy',reasoning:'QuadludTangoReasoningPresenter',i18n:'QuadludTangoI18n'}),
@@ -50,7 +62,7 @@
       sessionLifecycle:moduleCapability('QuadludGameSessionAdapters',gameModulePath(id,'session'),id),
       uiLifecycle:lazyModuleObjectCapability(b.ui,gameModulePath(id,'ui'),['createAdapter']),
       pedagogyLifecycle:lazyModuleObjectCapability(b.pedagogy,gameModulePath(id,'pedagogy'),['createAdapter','dependencyNames','trainingFixture']),
-      reasoningLifecycle:lazyModuleObjectCapability(b.reasoning,gameModulePath(id,'reasoning'),['createPresenter']),
+      reasoningLifecycle:reasoningLifecycleCapability(b.reasoning,gameModulePath(id,'reasoning')),
       i18n:moduleCapability(b.i18n,gameModulePath(id,'i18n'))
     };
     if(b.generationIdentity)capabilities.generationIdentity=moduleCapability(b.generator,gameModulePath(id,'generator'),b.generationIdentity);

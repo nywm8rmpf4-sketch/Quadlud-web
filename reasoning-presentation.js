@@ -11,7 +11,7 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
 
-  const VERSION=2;
+  const VERSION=3;
   const EVIDENCE_SCHEMA=1;
   const PRESENTATION_SCHEMA=1;
   const EVIDENCE_KIND='engine-deduction';
@@ -21,6 +21,8 @@
   const PROOF_REPLAY_KIND='proof-replay';
   const PEDAGOGY_NAVIGATION_SCHEMA=1;
   const PEDAGOGY_NAVIGATION_KIND='pedagogy-navigation';
+  const PEDAGOGY_VIEW_SCHEMA=1;
+  const PEDAGOGY_VIEW_KIND='pedagogy-view';
   const DERIVED_FIELDS=Object.freeze(['technique','focus','explanation','action']);
   const FORBIDDEN_EVIDENCE_KEYS=Object.freeze(new Set(['sol','solution','hiddenSolution','solutionGrid','answerGrid','hiddenState','validationState']));
 
@@ -372,15 +374,82 @@
     return deepFreeze(output);
   }
 
-  function isReasoningPresentation(value){
+  function assertReasoningPresentation(value){
+    if(!isPlainObject(value)||value.schema!==PRESENTATION_SCHEMA||typeof value.game!=='string'||typeof value.rule!=='string')fail('presentation must come from defineReasoningPresentation()');
+    assertSafeJson(value,'presentation');
+    if(!isPlainObject(value.proofDetails)||!isPlainObject(value.provenance)||value.provenance.kind!==EVIDENCE_KIND)fail('presentation must contain grounded proof details and provenance');
+    const evidence=captureEngineEvidence({
+      game:value.game,
+      source:value.proofDetails.source,
+      primary:value.proofDetails.primary,
+      supports:value.proofDetails.supports,
+      final:value.proofDetails.final,
+      automatic:value.proofDetails.automatic,
+      metadata:value.proofDetails.evidenceMetadata
+    });
+    if(value.game!==evidence.game)fail('presentation game must match engine evidence');
+    if(value.rule!==evidence.primary.rule)fail('presentation rule must match primary engine deduction');
+    if(JSON.stringify(value.premises)!==JSON.stringify(evidence.primary.premises||[]))fail('presentation premises must match primary engine deduction');
+    const expectedRank=Number.isFinite(Number(evidence.primary.rank))?Number(evidence.primary.rank):0;
+    const expectedTechniqueLevel=Number.isFinite(Number(evidence.primary.techniqueLevel))?Number(evidence.primary.techniqueLevel):0;
+    if(value.rank!==expectedRank)fail('presentation rank must match primary engine deduction');
+    if(value.techniqueLevel!==expectedTechniqueLevel)fail('presentation techniqueLevel must match primary engine deduction');
+    if(value.provenance.source!==evidence.source)fail('presentation provenance source must match engine evidence');
+    if(!isPlainObject(value.provenance.derivation))fail('presentation provenance derivation must be a plain object');
+    for(const key of Object.keys(value.provenance.derivation))if(!DERIVED_FIELDS.includes(key))fail(`unknown presentation provenance derivation field "${key}"`);
+    for(const field of DERIVED_FIELDS){
+      const refs=value.provenance.derivation[field];
+      if(!Array.isArray(refs))fail(`presentation provenance derivation.${field} must be an array`);
+      if(value[field]!==null&&refs.length===0)fail(`presentation ${field} requires evidence derivation paths`);
+      if(refs.length)normalizeDerivation(evidence,field,refs);
+    }
+    if(Object.prototype.hasOwnProperty.call(value,'proofNarrative'))validateProofNarrativeAgainstEvidence(evidence,value.proofNarrative);
+    if(!isPlainObject(value.metadata))fail('presentation metadata must be a plain object');
+    return value
+  }
+  function isReasoningPresentation(value){try{assertReasoningPresentation(value);return true}catch(_){return false}}
+
+  function definePedagogyView(presentation,source={}){
+    const canonical=assertReasoningPresentation(presentation);
+    if(!isPlainObject(source))fail('pedagogy view options must be a plain object');
+    const allowed=new Set(['navigation']);
+    for(const key of Object.keys(source))if(!allowed.has(key))fail(`unknown pedagogy view option "${key}"`);
+    const navigation=source.navigation==null?null:assertPedagogyNavigation(source.navigation);
+    const narrative=Object.prototype.hasOwnProperty.call(canonical,'proofNarrative')?canonical.proofNarrative:null;
+    const proof=deepFreeze({
+      available:!!narrative,
+      stepCount:narrative?.steps?.length||0,
+      hasHypothesis:!!narrative?.hypothesis,
+      hasContradiction:!!narrative?.contradiction,
+      hasAction:!!narrative?.action
+    });
+    return deepFreeze({
+      schema:PEDAGOGY_VIEW_SCHEMA,
+      kind:PEDAGOGY_VIEW_KIND,
+      game:canonical.game,
+      where:frozenClone(canonical.focus),
+      rule:canonical.rule,
+      technique:frozenClone(canonical.technique),
+      why:frozenClone(canonical.explanation),
+      action:frozenClone(canonical.action),
+      proof,
+      navigation,
+      provenance:deepFreeze({
+        kind:canonical.provenance.kind,
+        source:canonical.provenance.source,
+        derivation:canonical.provenance.derivation,
+        presentationSchema:canonical.schema,
+        proofNarrativeSchema:narrative?.schema||null
+      })
+    })
+  }
+  function isPedagogyView(value){
     try{
-      if(!isPlainObject(value)||value.schema!==PRESENTATION_SCHEMA||typeof value.game!=='string'||typeof value.rule!=='string')return false;
-      assertSafeJson(value,'presentation');
-      if(!isPlainObject(value.proofDetails)||!isPlainObject(value.provenance)||value.provenance.kind!==EVIDENCE_KIND)return false;
-      if(Object.prototype.hasOwnProperty.call(value,'proofNarrative')){
-        const evidence=captureEngineEvidence({game:value.game,source:value.proofDetails.source,primary:value.proofDetails.primary,supports:value.proofDetails.supports,final:value.proofDetails.final,automatic:value.proofDetails.automatic,metadata:value.proofDetails.evidenceMetadata});
-        validateProofNarrativeAgainstEvidence(evidence,value.proofNarrative)
-      }
+      if(!isPlainObject(value)||value.schema!==PEDAGOGY_VIEW_SCHEMA||value.kind!==PEDAGOGY_VIEW_KIND)return false;
+      assertSafeJson(value,'pedagogy view');
+      if(typeof value.game!=='string'||typeof value.rule!=='string'||!isPlainObject(value.provenance)||value.provenance.kind!==EVIDENCE_KIND)return false;
+      if(value.navigation!==null&&!isPedagogyNavigation(value.navigation))return false;
+      if(!isPlainObject(value.proof)||typeof value.proof.available!=='boolean'||!Number.isInteger(value.proof.stepCount)||value.proof.stepCount<0)return false;
       return true
     }catch(_){return false}
   }
@@ -388,9 +457,10 @@
   return Object.freeze({
     VERSION,EVIDENCE_SCHEMA,PRESENTATION_SCHEMA,EVIDENCE_KIND,DERIVED_FIELDS,
     PROOF_NARRATIVE_SCHEMA,PROOF_NARRATIVE_KIND,PROOF_REPLAY_SCHEMA,PROOF_REPLAY_KIND,
-    PEDAGOGY_NAVIGATION_SCHEMA,PEDAGOGY_NAVIGATION_KIND,
+    PEDAGOGY_NAVIGATION_SCHEMA,PEDAGOGY_NAVIGATION_KIND,PEDAGOGY_VIEW_SCHEMA,PEDAGOGY_VIEW_KIND,
     captureEngineEvidence,defineReasoningPresentation,evidencePathValue,isReasoningPresentation,
     defineProofNarrative,isProofNarrative,replayProofNarrative,
-    definePedagogyNavigation,isPedagogyNavigation,updatePedagogyNavigation
+    definePedagogyNavigation,isPedagogyNavigation,updatePedagogyNavigation,
+    definePedagogyView,isPedagogyView
   });
 });

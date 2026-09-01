@@ -27,6 +27,8 @@
       haptic,updateScoreFlags,maybeAutoFinish,a11ySetupGrid,a11yCoord,a11ySetCell,keyCell,
       applyConfiguredIllegalClasses,applyUnjustifiedHighlights,checkVictory,hint,finish
     }=deps;
+    const GridCoordinates=deps.gridCoordinates||root?.QuadludGridCoordinates;
+    if(!GridCoordinates||typeof GridCoordinates.markup!=='function'||typeof GridCoordinates.coordinateLabel!=='function')throw new Error('QUADLUD Soleil-Lune UI dependency unavailable: gridCoordinates');
     const tangoIllegalCells=deps.tangoIllegalCells||root?.tangoIllegalCells;if(typeof tangoIllegalCells!=='function')throw new Error('QUADLUD Soleil-Lune UI dependency unavailable: tangoIllegalCells');
 
     function a11yRelations(current,r,c){
@@ -34,7 +36,7 @@
       for(const [rr,cc,dir,symbol] of current.edges||[]){
         const a=[rr,cc],b=dir==='r'?[rr,cc+1]:[rr+1,cc];let other=null;
         if(a[0]===r&&a[1]===c)other=b;else if(b[0]===r&&b[1]===c)other=a;
-        if(other)out.push(`${symbol} ${a11yCoord(other[0],other[1])}`)
+        if(other)out.push(`${symbol} ${GridCoordinates.coordinateLabel(other[0],other[1])}`)
       }
       return out
     }
@@ -43,7 +45,7 @@
       const current=getCurrent(),board=query('#tboard');
       if(!current||current.game!=='tango'||!board)return false;
       [...board.children].forEach((cell,i)=>{
-        const r=Math.floor(i/6),c=i%6,value=current.state[r][c],parts=[a11yCoord(r,c)];
+        const r=Math.floor(i/6),c=i%6,value=current.state[r][c],parts=[GridCoordinates.coordinateLabel(r,c)];
         if(value===0)parts.push('☾');else if(value===1)parts.push('☀');
         parts.push(...a11yRelations(current,r,c));
         a11ySetCell(cell,r,c,parts.join(', '),{readonly:current.givens.has(i)})
@@ -88,7 +90,9 @@
     }
 
     function render(session){
-      shell(gameLabel('tango'),`6×6 · ${tr('generated')}`,session.diff,`<div class="board-wrap"><div class="board" id="tboard" style="grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))"></div></div>`,gameRules('tango'));
+      const boardHtml='<div class="board" id="tboard" style="grid-column:2;grid-row:2;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))"></div>';
+      const coordinateBoard=GridCoordinates.markup(6,6,{className:'board-wrap grid-coordinate-wrap tango-coordinate-wrap',columnClass:'tango-column-coordinates',rowClass:'tango-row-coordinates',boardHtml});
+      shell(gameLabel('tango'),`6×6 · ${tr('generated')}`,session.diff,coordinateBoard,gameRules('tango'));
       const board=query('#tboard');
       for(let r=0;r<6;r++)for(let c=0;c<6;c++){
         const cell=document.createElement('div');
