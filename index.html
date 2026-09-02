@@ -12,26 +12,26 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="QUADLUD" />
-<link rel="stylesheet" href="styles-core.css?v=3.1.7" />
-<link rel="stylesheet" href="styles-patches.css?v=3.1.7" />
-<link rel="stylesheet" href="styles-i18n.css?v=3.1.7" />
-<link rel="stylesheet" href="styles-pedagogy.css?v=3.1.7" />
-<link rel="stylesheet" href="styles-patches-direct.css?v=3.1.7" />
-<link rel="stylesheet" href="styles-accessibility.css?v=3.1.7" />
-<link rel="stylesheet" href="styles-sudoku-proof.css?v=3.1.7" />
-<link rel="stylesheet" href="styles-data.css?v=3.1.7" />
-<link rel="stylesheet" href="styles-nonogram.css?v=3.1.7" />
-<link rel="stylesheet" href="styles-mobile.css?v=3.1.7" />
+<link rel="stylesheet" href="styles-core.css?v=3.1.8" />
+<link rel="stylesheet" href="styles-patches.css?v=3.1.8" />
+<link rel="stylesheet" href="styles-i18n.css?v=3.1.8" />
+<link rel="stylesheet" href="styles-pedagogy.css?v=3.1.8" />
+<link rel="stylesheet" href="styles-patches-direct.css?v=3.1.8" />
+<link rel="stylesheet" href="styles-accessibility.css?v=3.1.8" />
+<link rel="stylesheet" href="styles-sudoku-proof.css?v=3.1.8" />
+<link rel="stylesheet" href="styles-data.css?v=3.1.8" />
+<link rel="stylesheet" href="styles-nonogram.css?v=3.1.8" />
+<link rel="stylesheet" href="styles-mobile.css?v=3.1.8" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png" />
 <title>QUADLUD — Couronnes, Soleil-Lune, Grille 6, Rectangles</title>
 </head>
 <body>
 <a class="skip-link" id="skipLink" href="#app">Aller au contenu</a>
-<script src="platform-web.js?v=3.1.7"></script>
-<script src="web-storage.js?v=3.1.7"></script>
-<script src="data-serialization.js?v=3.1.7"></script>
-<script src="persistence-services.js?v=3.1.7"></script>
+<script src="platform-web.js?v=3.1.8"></script>
+<script src="web-storage.js?v=3.1.8"></script>
+<script src="data-serialization.js?v=3.1.8"></script>
+<script src="persistence-services.js?v=3.1.8"></script>
 <script>try{globalThis.QuadludPersistentDataServices=QuadludPersistenceServices.createServices({storage:QuadludWebStorage.getLocalStorageAdapter(),serialization:QuadludDataSerialization});let p=globalThis.QuadludPersistentDataServices.preferences.readRaw({throwOnError:true}),m=p.theme||'auto',d=m==='dark'||(m==='auto'&&matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.dataset.theme=d?'dark':'light'}catch(_){}</script>
 <header class="topbar">
   <button class="icon-btn" id="homeBtn" aria-label="Accueil">⌂</button>
@@ -42,73 +42,73 @@
 <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 <div id="a11yLive" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 <div id="busyOverlay" class="busy-overlay" role="status" aria-live="polite" aria-atomic="true" aria-busy="true" hidden><div class="busy-card"><span>Génération…</span></div></div>
-<script src="game-contract.js?v=3.1.7"></script>
-<script src="game-manifest.js?v=3.1.7"></script>
-<script src="game-registry.js?v=3.1.7"></script>
-<script src="logical-move.js?v=3.1.7"></script>
-<script src="queens-logic.js?v=3.1.7"></script>
-<script src="difficulty-rating.js?v=3.1.7"></script>
-<script src="queens-difficulty.js?v=3.1.7"></script>
-<script src="tango-logic.js?v=3.1.7"></script>
-<script src="tango-difficulty.js?v=3.1.7"></script>
-<script src="patches-logic.js?v=3.1.7"></script>
-<script src="patches-difficulty.js?v=3.1.7"></script>
-<script src="sudoku-logic.js?v=3.1.7"></script>
-<script src="sudoku-difficulty.js?v=3.1.7"></script>
-<script src="nonogram-logic.js?v=3.1.7"></script>
-<script src="nonogram-validation-solver.js?v=3.1.7"></script>
-<script src="nonogram-difficulty.js?v=3.1.7"></script>
-<script src="generation-common.js?v=3.1.7"></script>
-<script src="queens-qpool4.js?v=3.1.7"></script>
-<script src="queens-generator.js?v=3.1.7"></script>
-<script src="tango-generator.js?v=3.1.7"></script>
-<script src="sudoku-generator.js?v=3.1.7"></script>
-<script src="patches-generator.js?v=3.1.7"></script>
-<script src="nonogram-generator.js?v=3.1.7"></script>
-<script src="session-core.js?v=3.1.7"></script>
-<script src="game-session-adapters.js?v=3.1.7"></script>
-<script src="reasoning-view.js?v=3.1.7"></script>
-<script src="game-ui-adapters.js?v=3.1.7"></script>
-<script src="queens-ui.js?v=3.1.7"></script>
-<script src="tango-ui.js?v=3.1.7"></script>
-<script src="sudoku-ui.js?v=3.1.7"></script>
-<script src="patches-ui.js?v=3.1.7"></script>
-<script src="nonogram-ui.js?v=3.1.7"></script>
-<script src="queens-runtime.js?v=3.1.7"></script>
-<script src="tango-runtime.js?v=3.1.7"></script>
-<script src="sudoku-runtime.js?v=3.1.7"></script>
-<script src="patches-runtime.js?v=3.1.7"></script>
-<script src="nonogram-runtime.js?v=3.1.7"></script>
-<script src="game-pedagogy-adapters.js?v=3.1.7"></script>
-<script src="queens-pedagogy.js?v=3.1.7"></script>
-<script src="tango-pedagogy.js?v=3.1.7"></script>
-<script src="sudoku-pedagogy.js?v=3.1.7"></script>
-<script src="patches-pedagogy.js?v=3.1.7"></script>
-<script src="pedagogy-metadata.js?v=3.1.7"></script>
-<script src="reasoning-presentation.js?v=3.1.7"></script>
-<script src="queens-reasoning-presentation.js?v=3.1.7"></script>
-<script src="tango-reasoning-presentation.js?v=3.1.7"></script>
-<script src="sudoku-reasoning-presentation.js?v=3.1.7"></script>
-<script src="patches-reasoning-presentation.js?v=3.1.7"></script>
-<script src="nonogram-reasoning-presentation.js?v=3.1.7"></script>
-<script src="nonogram-pedagogy.js?v=3.1.7"></script>
-<script src="i18n-catalog.js?v=3.1.7"></script>
-<script src="queens-i18n.js?v=3.1.7"></script>
-<script src="tango-i18n.js?v=3.1.7"></script>
-<script src="sudoku-i18n.js?v=3.1.7"></script>
-<script src="patches-i18n.js?v=3.1.7"></script>
-<script src="nonogram-i18n.js?v=3.1.7"></script>
-<script src="mastery-model.js?v=3.1.7"></script>
-<script src="progression-stats.js?v=3.1.7"></script>
-<script src="challenge-protocol.js?v=3.1.7"></script>
-<script src="daily-model.js?v=3.1.7"></script>
-<script src="diagnostic-ui-structural.js?v=3.1.7"></script>
-<script src="diagnostic-attachments.js?v=3.1.7"></script>
-<script src="diagnostic-recorder.js?v=3.1.7"></script>
-<script src="app-precompute.js?v=3.1.7"></script>
-<script src="victory-presentation.js?v=3.1.7"></script>
-<script src="app.js?v=3.1.7"></script>
-<script src="move-trust.js?v=3.1.7"></script>
-<script src="coach-presentation-bridge.js?v=3.1.7"></script>
+<script src="game-contract.js?v=3.1.8"></script>
+<script src="game-manifest.js?v=3.1.8"></script>
+<script src="game-registry.js?v=3.1.8"></script>
+<script src="logical-move.js?v=3.1.8"></script>
+<script src="queens-logic.js?v=3.1.8"></script>
+<script src="difficulty-rating.js?v=3.1.8"></script>
+<script src="queens-difficulty.js?v=3.1.8"></script>
+<script src="tango-logic.js?v=3.1.8"></script>
+<script src="tango-difficulty.js?v=3.1.8"></script>
+<script src="patches-logic.js?v=3.1.8"></script>
+<script src="patches-difficulty.js?v=3.1.8"></script>
+<script src="sudoku-logic.js?v=3.1.8"></script>
+<script src="sudoku-difficulty.js?v=3.1.8"></script>
+<script src="nonogram-logic.js?v=3.1.8"></script>
+<script src="nonogram-validation-solver.js?v=3.1.8"></script>
+<script src="nonogram-difficulty.js?v=3.1.8"></script>
+<script src="generation-common.js?v=3.1.8"></script>
+<script src="queens-qpool4.js?v=3.1.8"></script>
+<script src="queens-generator.js?v=3.1.8"></script>
+<script src="tango-generator.js?v=3.1.8"></script>
+<script src="sudoku-generator.js?v=3.1.8"></script>
+<script src="patches-generator.js?v=3.1.8"></script>
+<script src="nonogram-generator.js?v=3.1.8"></script>
+<script src="session-core.js?v=3.1.8"></script>
+<script src="game-session-adapters.js?v=3.1.8"></script>
+<script src="reasoning-view.js?v=3.1.8"></script>
+<script src="game-ui-adapters.js?v=3.1.8"></script>
+<script src="queens-ui.js?v=3.1.8"></script>
+<script src="tango-ui.js?v=3.1.8"></script>
+<script src="sudoku-ui.js?v=3.1.8"></script>
+<script src="patches-ui.js?v=3.1.8"></script>
+<script src="nonogram-ui.js?v=3.1.8"></script>
+<script src="queens-runtime.js?v=3.1.8"></script>
+<script src="tango-runtime.js?v=3.1.8"></script>
+<script src="sudoku-runtime.js?v=3.1.8"></script>
+<script src="patches-runtime.js?v=3.1.8"></script>
+<script src="nonogram-runtime.js?v=3.1.8"></script>
+<script src="game-pedagogy-adapters.js?v=3.1.8"></script>
+<script src="queens-pedagogy.js?v=3.1.8"></script>
+<script src="tango-pedagogy.js?v=3.1.8"></script>
+<script src="sudoku-pedagogy.js?v=3.1.8"></script>
+<script src="patches-pedagogy.js?v=3.1.8"></script>
+<script src="pedagogy-metadata.js?v=3.1.8"></script>
+<script src="reasoning-presentation.js?v=3.1.8"></script>
+<script src="queens-reasoning-presentation.js?v=3.1.8"></script>
+<script src="tango-reasoning-presentation.js?v=3.1.8"></script>
+<script src="sudoku-reasoning-presentation.js?v=3.1.8"></script>
+<script src="patches-reasoning-presentation.js?v=3.1.8"></script>
+<script src="nonogram-reasoning-presentation.js?v=3.1.8"></script>
+<script src="nonogram-pedagogy.js?v=3.1.8"></script>
+<script src="i18n-catalog.js?v=3.1.8"></script>
+<script src="queens-i18n.js?v=3.1.8"></script>
+<script src="tango-i18n.js?v=3.1.8"></script>
+<script src="sudoku-i18n.js?v=3.1.8"></script>
+<script src="patches-i18n.js?v=3.1.8"></script>
+<script src="nonogram-i18n.js?v=3.1.8"></script>
+<script src="mastery-model.js?v=3.1.8"></script>
+<script src="progression-stats.js?v=3.1.8"></script>
+<script src="challenge-protocol.js?v=3.1.8"></script>
+<script src="daily-model.js?v=3.1.8"></script>
+<script src="diagnostic-ui-structural.js?v=3.1.8"></script>
+<script src="diagnostic-attachments.js?v=3.1.8"></script>
+<script src="diagnostic-recorder.js?v=3.1.8"></script>
+<script src="app-precompute.js?v=3.1.8"></script>
+<script src="victory-presentation.js?v=3.1.8"></script>
+<script src="app.js?v=3.1.8"></script>
+<script src="move-trust.js?v=3.1.8"></script>
+<script src="coach-presentation-bridge.js?v=3.1.8"></script>
 </body>
 </html>

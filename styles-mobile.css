@@ -284,6 +284,24 @@ body.tutor-active .walkthrough-scroll{min-height:0;overflow:auto;overscroll-beha
   }
 }
 
+
+/* v3.1.8-F regression — iPad portrait Tutor must reserve real room for
+   pedagogy. Normal gameplay keeps the tablet board floor above; only
+   an open Tutor gets this presentation cap. */
+@media (orientation:portrait) and (min-width:700px) and (max-width:1100px) and (min-height:900px){
+  body.tutor-active .walkthrough-board-wrap{
+    width:min(calc(100vw - 110px),clamp(460px,38dvh,520px));
+    max-width:520px;
+    flex:0 0 auto;
+  }
+  body.tutor-active .walkthrough-scroll{
+    min-height:clamp(220px,26dvh,320px);
+    flex:1 1 auto;
+    max-height:none;
+    overflow-y:auto;
+  }
+}
+
 /* Coach remains an overlay so it never steals the minimum playable board.
    Long reasoning scrolls inside the Coach card, never through the game page. */
 .hint-notice{
