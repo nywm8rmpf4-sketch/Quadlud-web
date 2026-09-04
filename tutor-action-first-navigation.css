@@ -1,0 +1,39 @@
+/*
+ * QUADLUD — Tutor action-first logical move navigation
+ * Copyright © 2026 Serge Benoliel. All rights reserved.
+ */
+
+.walkthrough-current-action{position:relative}
+.walkthrough-current-action-chain{
+  z-index:6;
+  box-shadow:
+    inset 0 0 0 3px color-mix(in srgb,var(--accent) 76%,transparent),
+    inset 0 0 0 6px color-mix(in srgb,var(--accent) 16%,transparent)!important;
+}
+.walkthrough-chain-badge{
+  position:absolute;
+  inset-inline-end:3px;
+  top:3px;
+  display:grid;
+  place-items:center;
+  min-width:20px;
+  height:20px;
+  padding:0 4px;
+  border-radius:999px;
+  border:1px solid color-mix(in srgb,var(--accent) 55%,transparent);
+  background:color-mix(in srgb,var(--paper) 94%,var(--accent));
+  color:var(--accent);
+  font-size:13px;
+  font-weight:900;
+  line-height:1;
+  pointer-events:none;
+  z-index:12;
+}
+.walkthrough-proof-chain-active .walkthrough-proof-navigation{
+  border-radius:12px;
+  padding:4px 6px;
+  background:color-mix(in srgb,var(--accent) 5%,transparent);
+}
+@media(max-width:520px){
+  .walkthrough-chain-badge{min-width:18px;height:18px;font-size:12px;top:2px;inset-inline-end:2px}
+}

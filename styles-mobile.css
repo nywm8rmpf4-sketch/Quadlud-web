@@ -36,6 +36,7 @@
   --game-board-min-phone-landscape:270px;
   --game-board-min-tablet-portrait:600px;
   --game-board-min-tablet-landscape:560px;
+  --game-board-tablet-balanced:560px;
 }
 
 body:has(#app .panel .board-wrap),
@@ -105,18 +106,22 @@ body:has(#app .panel .nonogram-game) #app>.panel{
   }
 }
 
-/* Tablet portrait: give the board a genuinely tablet-sized floor whenever
-   the viewport can satisfy it. The min() above still keeps smaller devices
-   safe; these floors only apply when the corresponding space exists. */
+/* v3.1.8-U12 — tablet portrait/landscape visual parity.
+   On iPad portrait, do not inflate the game board beyond the established
+   tablet landscape reference. The saved vertical space belongs to Coach/
+   Tutor messaging and keeps orientation changes visually coherent. */
 @media (orientation:portrait) and (min-width:768px) and (min-height:900px){
   .panel:has(.board-wrap)>.board-wrap{
-    width:clamp(var(--game-board-min-tablet-portrait),min(calc(100vw - 120px),calc(100dvh - 360px)),var(--game-board-max));
+    width:min(calc(100vw - 120px),var(--game-board-tablet-balanced));
+    max-width:var(--game-board-tablet-balanced);
   }
   .panel:has(.sudoku)>.board-wrap{
-    width:clamp(var(--game-board-min-tablet-portrait),min(calc(100vw - 120px),calc(100dvh - 460px)),var(--game-board-max));
+    width:min(calc(100vw - 120px),var(--game-board-tablet-balanced));
+    max-width:var(--game-board-tablet-balanced);
   }
   .panel:has(.nonogram-game) .nonogram-layout{
-    width:clamp(var(--game-board-min-tablet-portrait),min(calc(100vw - 120px),calc(100dvh - 430px)),var(--game-board-max));
+    width:min(calc(100vw - 120px),var(--game-board-tablet-balanced));
+    max-width:var(--game-board-tablet-balanced);
   }
 }
 
@@ -358,5 +363,65 @@ body.tutor-active .walkthrough-scroll{min-height:0;overflow:auto;overscroll-beha
   body:has(#qboard) .lighthouses-panel>.queens-coordinate-wrap{
     width:min(313px,calc(100dvh - 77px));
     max-width:min(313px,calc(100dvh - 77px));
+  }
+}
+
+/* v3.1.8-H-UI-LANDSCAPE — Tutor rail on the inline-start side, board on the
+   opposite side for tablet landscape. Phone landscape keeps the compact
+   <=520px-height contract already defined in styles-pedagogy.css. */
+@media (orientation:landscape) and (min-width:700px) and (min-height:521px){
+  body.tutor-active main#app{
+    width:100%;
+    max-width:1280px;
+    padding-left:14px;
+    padding-right:14px
+  }
+  body.tutor-active .walkthrough-panel{
+    width:100%;
+    max-width:none;
+    display:grid;
+    grid-template-columns:minmax(300px,.72fr) minmax(420px,1fr);
+    grid-template-rows:auto auto minmax(0,1fr);
+    column-gap:20px;
+    row-gap:0;
+    align-items:start
+  }
+  body.tutor-active .walkthrough-head{
+    grid-column:1;
+    grid-row:1;
+    min-width:0
+  }
+  body.tutor-active .walkthrough-actions-top{
+    grid-column:1;
+    grid-row:2;
+    min-width:0;
+    justify-content:flex-start;
+    align-self:start;
+    margin:8px 0
+  }
+  body.tutor-active .walkthrough-scroll{
+    grid-column:1;
+    grid-row:3;
+    min-width:0;
+    height:auto;
+    max-height:none;
+    align-self:stretch;
+    overflow-y:auto
+  }
+  body.tutor-active .walkthrough-board-wrap,
+  body.tutor-active .walkthrough-queens-coordinate-wrap{
+    grid-column:2;
+    grid-row:1 / 4;
+    align-self:center;
+    justify-self:center;
+    width:min(calc(100dvh - 118px),100%,var(--game-board-max));
+    max-width:none;
+    margin:0
+  }
+}
+@media (orientation:landscape) and (min-width:1000px) and (min-height:700px){
+  body.tutor-active .walkthrough-board-wrap,
+  body.tutor-active .walkthrough-queens-coordinate-wrap{
+    width:clamp(var(--game-board-min-tablet-landscape),min(calc(100dvh - 118px),100%),var(--game-board-max));
   }
 }

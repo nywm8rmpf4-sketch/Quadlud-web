@@ -60,6 +60,7 @@ function directCandidates(session,tierIndex){
   return session.directDeductions().filter(d=>allowed.has(d.rule)).sort(TL.deductionComparator);
 }
 function nextAllowedDeduction(session,tierIndex,includeAvailability=false){
+  if(!Number.isInteger(tierIndex)||tierIndex<0||tierIndex>=TIER_POLICY.length)throw new Error('Invalid Soleil/Lune tier');
   let direct=directCandidates(session,tierIndex),best=direct[0]||null;
   if(best||tierIndex<3)return {deduction:best,budgetHit:false,...(includeAvailability?{availableMoves:direct.length}:{})};
   let hypo=session.findAssumptionContradictionsDetailed(),hypotheses=uniqDeductions(hypo.deductions||[]);
@@ -122,6 +123,6 @@ function ratePuzzle(puzzle,options={}){
   return {...run,profile};
 }
 
-root.TangoDifficulty={VERSION:1,RULE_TIER,TIER_POLICY,canonicalizePublicPuzzle:canonicalizeTangoPublicPuzzle,solveTier:solveTangoTier,createAdapter,ratePuzzle,_test:{canonicalTango,initialBoard,solved,directCandidates,nextAllowedDeduction,policyTierForRule,sessionMetrics}};
+root.TangoDifficulty={VERSION:2,RULE_TIER,TIER_POLICY,canonicalizePublicPuzzle:canonicalizeTangoPublicPuzzle,nextAllowedDeduction,solveTier:solveTangoTier,createAdapter,ratePuzzle,_test:{canonicalTango,initialBoard,solved,directCandidates,nextAllowedDeduction,policyTierForRule,sessionMetrics}};
 if(typeof module!=='undefined'&&module.exports)module.exports=root.TangoDifficulty;
 })(typeof globalThis!=='undefined'?globalThis:this);

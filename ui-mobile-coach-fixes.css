@@ -1,0 +1,156 @@
+/*
+ * QUADLUD — v3.1.8 mobile immersive game + Tutor/Coach UI corrections
+ * Copyright © 2026 Serge Benoliel. All rights reserved.
+ */
+
+/* U8 — Soleil-Lune game and Tutor deliberately share the canonical
+   .relation/.relation.r/.relation.d geometry from styles-core.css.
+   Do not add Tutor-only = / × positioning here: it would break board parity. */
+
+/* U10 — the pedagogical stylesheet contains the generic rule
+   .walkthrough-board .cell>*{position:relative}. Keep the directional offsets
+   owned only by styles-core.css, but make the shared Tango positioning mode
+   unambiguous for real game and Tutor cells. !important is intentionally
+   limited to position so no duplicate r/d geometry is introduced. */
+.tango-coordinate-wrap .cell>.relation{
+  position:absolute!important;
+  z-index:4;
+}
+
+/* U2 — smartphone game/Tutor immersive chrome. Safari chrome itself can only
+   disappear in installed PWA standalone mode; QUADLUD's own horizontal bar
+   becomes a floating Home control so the game receives the full 100dvh. */
+@media (max-width:520px){
+  body:has(#app .panel .board-wrap),
+  body:has(#app .panel .nonogram-game),
+  body.tutor-active{
+    --game-viewport-topbar:0px;
+  }
+  body:has(#app .panel .board-wrap) .topbar,
+  body:has(#app .panel .nonogram-game) .topbar,
+  body.tutor-active .topbar{
+    position:fixed;
+    inset:0;
+    width:0;
+    height:0;
+    min-height:0;
+    padding:0;
+    border:0;
+    background:transparent;
+    box-shadow:none;
+    backdrop-filter:none;
+    pointer-events:none;
+    overflow:visible;
+    z-index:80;
+  }
+  body:has(#app .panel .board-wrap) .topbar .brand,
+  body:has(#app .panel .board-wrap) .topbar .top-actions,
+  body:has(#app .panel .nonogram-game) .topbar .brand,
+  body:has(#app .panel .nonogram-game) .topbar .top-actions,
+  body.tutor-active .topbar .brand,
+  body.tutor-active .topbar .top-actions{
+    display:none!important;
+  }
+  body:has(#app .panel .board-wrap) #homeBtn,
+  body:has(#app .panel .nonogram-game) #homeBtn,
+  body.tutor-active #homeBtn{
+    position:fixed;
+    inset-inline-start:calc(6px + env(safe-area-inset-left));
+    top:calc(6px + env(safe-area-inset-top));
+    width:44px;
+    height:44px;
+    min-width:44px;
+    min-height:44px;
+    padding:0;
+    display:grid;
+    place-items:center;
+    border:1px solid color-mix(in srgb,var(--muted) 28%,transparent);
+    border-radius:999px;
+    background:color-mix(in srgb,var(--paper) 94%,transparent);
+    box-shadow:0 4px 14px rgba(33,28,20,.12);
+    backdrop-filter:blur(12px);
+    pointer-events:auto;
+    z-index:90;
+  }
+  html[dir="rtl"] body:has(#app .panel .board-wrap) #homeBtn,
+  html[dir="rtl"] body:has(#app .panel .nonogram-game) #homeBtn,
+  html[dir="rtl"] body.tutor-active #homeBtn{
+    inset-inline-start:auto;
+    inset-inline-end:calc(6px + env(safe-area-inset-right));
+  }
+  body:has(#app .panel .board-wrap) #app,
+  body:has(#app .panel .nonogram-game) #app,
+  body.tutor-active #app{
+    height:100dvh;
+    padding-top:calc(8px + env(safe-area-inset-top));
+    padding-bottom:calc(8px + env(safe-area-inset-bottom));
+  }
+  body:has(#app .panel .board-wrap) .game-head,
+  body:has(#app .panel .nonogram-game) .game-head,
+  body.tutor-active .walkthrough-head{
+    padding-inline-start:52px;
+  }
+  html[dir="rtl"] body:has(#app .panel .board-wrap) .game-head,
+  html[dir="rtl"] body:has(#app .panel .nonogram-game) .game-head,
+  html[dir="rtl"] body.tutor-active .walkthrough-head{
+    padding-inline-start:0;
+    padding-inline-end:52px;
+  }
+}
+
+/* U13 — Mosaïque is taller than the other boards because clues and tool
+   controls surround the square grid. In phone landscape, reserve more of the
+   panel for the game surface and move the three Mosaïque tools beside the
+   clue/grid composite instead of stacking them above it. This keeps every
+   control at a 44px touch target while protecting the playable board floor. */
+@media (orientation:landscape) and (max-height:520px) and (min-width:600px){
+  .panel:has(.nonogram-game){
+    grid-template-columns:minmax(190px,.46fr) minmax(0,1fr);
+    column-gap:8px;
+  }
+  .panel:has(.nonogram-game)>.nonogram-game{
+    width:100%;
+    max-width:100%;
+    display:grid;
+    grid-template-columns:minmax(82px,96px) minmax(0,1fr);
+    grid-template-rows:1fr;
+    column-gap:8px;
+    align-items:center;
+    justify-self:stretch;
+  }
+  .panel:has(.nonogram-game) .nonogram-tools{
+    grid-column:1;
+    grid-row:1;
+    width:100%;
+    margin:0;
+    grid-template-columns:1fr;
+    gap:5px;
+    align-self:center;
+  }
+  .panel:has(.nonogram-game) .nonogram-tools .ng-tool{
+    min-height:44px;
+    padding:4px 3px;
+    font-size:10px;
+    line-height:1.05;
+    white-space:nowrap;
+  }
+  .panel:has(.nonogram-game) .nonogram-layout{
+    grid-column:2;
+    grid-row:1;
+    width:min(calc(100dvh - 104px),calc(100% - 2px),330px);
+    max-width:330px;
+    margin:0 auto;
+    align-self:center;
+    justify-self:center;
+  }
+}
+
+/* U3/U4 — Coach window owns its progressive controls and remains draggable. */
+.coach-window-progressive p{margin:8px 0 0;line-height:1.42}
+.coach-window-action{padding-top:8px;border-top:1px solid color-mix(in srgb,var(--muted) 22%,transparent)}
+.coach-window-actions{display:flex;gap:8px;align-items:center;margin-top:10px}
+.coach-window-actions .btn{flex:1 1 0;min-height:44px}
+@media(max-width:520px){
+  .coach-window-actions{position:sticky;bottom:0;padding-top:8px;background:linear-gradient(to bottom,transparent,var(--paper) 28%)}
+  .hint-notice{max-height:min(72dvh,640px);overflow:auto;overscroll-behavior:contain}
+}

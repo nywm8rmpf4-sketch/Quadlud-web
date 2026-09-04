@@ -1,8 +1,7 @@
 /*
  * QUADLUD — static game module manifest
  * Copyright © 2026 Serge Benoliel. All rights reserved.
- * Proprietary software. Copying, modification, redistribution or exploitation
- * without prior written authorization is prohibited.
+ * Proprietary software. Copying, modification, redistribution or exploitation without prior written authorization is prohibited.
  */
 (function(root,factory){
   const api=factory();
@@ -27,6 +26,7 @@
       id:'tango',
       metadata:Object.freeze({labelKey:'gameTango',descriptionKey:'tangoSub',challengeCode:'T',icon:'☀︎'}),
       modules:Object.freeze({logic:'tango-logic.js',difficulty:'tango-difficulty.js',generator:'tango-generator.js',session:'game-session-adapters.js',ui:'tango-ui.js',runtime:'tango-runtime.js',pedagogy:'tango-pedagogy.js',reasoning:'tango-reasoning-presentation.js',i18n:'tango-i18n.js'}),
+      supportModules:Object.freeze(['tango-played-move-planner.js','tango-played-move-runtime.js']),
       worker:true,offline:true
     }),
     Object.freeze({
@@ -44,8 +44,8 @@
     Object.freeze({
       id:'nonogram',
       metadata:Object.freeze({labelKey:'gameNonogram',descriptionKey:'nonogramSub',challengeCode:'N',icon:'▦'}),
-      modules:Object.freeze({logic:'nonogram-logic.js',difficulty:'nonogram-difficulty.js',generator:'nonogram-generator.js',session:'game-session-adapters.js',ui:'nonogram-ui.js',runtime:'nonogram-runtime.js',pedagogy:'nonogram-pedagogy.js',reasoning:'nonogram-reasoning-presentation.js',i18n:'nonogram-i18n.js'}),
-      supportModules:Object.freeze(['nonogram-validation-solver.js']),workerSupportModules:Object.freeze(['logical-move.js','nonogram-validation-solver.js']),
+      modules:Object.freeze({logic:'nonogram-logic.js',difficulty:'nonogram-difficulty.js',generator:'nonogram-generator.js',session:'game-session-adapters.js',ui:'nonogram-ui.js',runtime:'nonogram-runtime.js',pedagogy:'nonogram-pedagogy-atomic.js',reasoning:'nonogram-reasoning-presentation.js',i18n:'nonogram-i18n.js'}),
+      supportModules:Object.freeze(['nonogram-pedagogy.js','nonogram-validation-solver.js']),workerSupportModules:Object.freeze(['logical-move.js','nonogram-validation-solver.js']),
       worker:true,offline:true,daily:true
     })
   ]);

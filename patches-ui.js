@@ -260,6 +260,39 @@
       return parts.join(' ')
     }
 
+    function regionEdgeClasses(paint,r,c,id){
+      if(id==null)return '';
+      const n=paint.length,out=[];
+      if(r===0||paint[r-1]?.[c]!==id)out.push('patch-edge-t');
+      if(c===n-1||paint[r]?.[c+1]!==id)out.push('patch-edge-r');
+      if(r===n-1||paint[r+1]?.[c]!==id)out.push('patch-edge-b');
+      if(c===0||paint[r]?.[c-1]!==id)out.push('patch-edge-l');
+      return out.join(' ')
+    }
+
+    function walkthroughBoard({base,snapshot,target=null,deduction=null}={}){
+      const session=base,n=session?.n||6,paint=snapshot?.paint;
+      if(!session||!Array.isArray(paint))throw new TypeError('Rectangles walkthrough board requires a visible snapshot');
+      const targetKey=Array.isArray(target)?target.join(','):null,clueAt=new Map(session.ids.map(id=>[session.clues[id].pos.join(','),id]));
+      const context=new Set((deduction?.focusCells||[]).map(x=>x.join(','))),conclusions=new Set();
+      for(const x of deduction?.conclusions||[]){
+        if(x.type==='OWNER')conclusions.add(x.cell.join(','));
+        else if(x.type==='SELECTED_RECT')for(const cell of x.rectangle?.cells||[])conclusions.add(cell.join(','))
+      }
+      const cells=[];
+      for(let r=0;r<n;r++)for(let c=0;c<n;c++){
+        const key=`${r},${c}`,id=paint[r][c],clueId=clueAt.get(key),classes=['cell','patch-cell','walkthrough-cell'];
+        if(id!=null)classes.push('paint',...regionEdgeClasses(paint,r,c,id).split(' ').filter(Boolean));
+        if(clueId!=null)classes.push('clue');
+        if(context.has(key))classes.push('walkthrough-context');
+        if(conclusions.has(key)||targetKey===key)classes.push('walkthrough-target');
+        const fill=id==null?'#fff':session.pal[id%session.pal.length],body=clueId!=null?clueHTML(session.clues[clueId]):'';
+        cells.push(`<div class="${classes.join(' ')}" data-r="${r}" data-c="${c}" data-coordinate="${GridCoordinates.coordinateLabel(r,c)}" style="--patch-fill:${fill}">${body}</div>`)
+      }
+      const boardHtml=`<div class="patch-board-surface" style="grid-column:2;grid-row:2;position:relative;min-width:0"><div class="board walkthrough-board patch-game-board patch-responsive-clues" id="pboard" data-patch-tutor="readonly" style="grid-template-columns:repeat(${n},minmax(0,1fr));grid-template-rows:repeat(${n},minmax(0,1fr))">${cells.join('')}</div></div>`;
+      return {html:GridCoordinates.markup(n,n,{className:'walkthrough-board-wrap board-wrap patch-board-wrap grid-coordinate-wrap patches-coordinate-wrap',columnClass:'patches-column-coordinates',rowClass:'patches-row-coordinates',boardHtml})}
+    }
+
     function syncAccessibility(){
       const current=getCurrent(),board=query('#pboard');
       if(!current||current.game!=='patches'||!board)return false;
@@ -330,7 +363,7 @@
 
     return Object.freeze({
       render,draw,reset,syncAccessibility,clueHTML,observeResponsiveClues,refreshResponsiveClues,pointToCellHysteresis,resizeStart,commitRectangle,
-      seedClueCell,removeRectangle,scheduleAfterPaint,clearPreview
+      seedClueCell,removeRectangle,scheduleAfterPaint,clearPreview,walkthroughBoard
     })
   }
 

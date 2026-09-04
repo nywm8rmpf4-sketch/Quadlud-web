@@ -32,8 +32,8 @@
   function gridCoordinateMarkup(rows,columns,{className='grid-coordinate-wrap',boardHtml='',cornerHtml='',columnClass='',rowClass=''}={}){
     rows=Number(rows);columns=Number(columns);
     if(!Number.isInteger(rows)||rows<1||!Number.isInteger(columns)||columns<1)throw new TypeError('QUADLUD grid dimensions must be positive integers');
-    const cols=Array.from({length:columns},(_,i)=>`<span>${gridColumnLabel(i)}</span>`).join('');
-    const rowLabels=Array.from({length:rows},(_,i)=>`<span>${gridRowLabel(i)}</span>`).join('');
+    const cols=Array.from({length:columns},(_,i)=>`<span class="grid-coordinate-label">${gridColumnLabel(i)}</span>`).join('');
+    const rowLabels=Array.from({length:rows},(_,i)=>`<span class="grid-coordinate-label">${gridRowLabel(i)}</span>`).join('');
     const colClass=`grid-column-coordinates${columnClass?` ${gridSafeClass(columnClass)}`:''}`,rowsClass=`grid-row-coordinates${rowClass?` ${gridSafeClass(rowClass)}`:''}`;
     return `<div class="${gridSafeClass(className)}" style="--grid-coordinate-cols:${columns};--grid-coordinate-rows:${rows}">${cornerHtml}<div class="${colClass}" aria-hidden="true">${cols}</div><div class="${rowsClass}" aria-hidden="true">${rowLabels}</div>${boardHtml}</div>`
   }

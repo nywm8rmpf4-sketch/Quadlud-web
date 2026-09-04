@@ -17,6 +17,10 @@
 .nonogram-board{grid-column:3;grid-row:3;display:grid!important;grid-template-columns:repeat(var(--ng-cols),minmax(0,1fr));grid-template-rows:repeat(var(--ng-rows),minmax(0,1fr));aspect-ratio:var(--ng-cols)/var(--ng-rows);width:100%;min-width:0;background:var(--paper);touch-action:manipulation!important}
 .nonogram-board>.ng-cell{font:800 clamp(14px,4.8vw,25px)/1 system-ui,sans-serif;color:var(--ng-empty);background:var(--paper);touch-action:manipulation!important;-webkit-tap-highlight-color:transparent}
 .nonogram-board>.ng-cell.ng-filled{background:var(--ng-fill);color:var(--paper)}
+/* v3.1.8-U13 — Tutor uses exactly the same visible FILLED state as gameplay.
+   Keep this selector explicit so pedagogical focus classes can add outlines or
+   shadows without ever replacing the semantic black square. */
+.nonogram-tutor-board .nonogram-board>.ng-cell.ng-filled{background:var(--ng-fill);color:var(--paper)}
 .nonogram-board>.ng-cell.ng-empty{background:color-mix(in srgb,var(--paper) 92%,var(--ink));color:var(--ng-empty)}
 .nonogram-board>.ng-cell.ng-group-right{border-right:3px solid var(--ng-line)}
 .nonogram-board>.ng-cell.ng-group-bottom{border-bottom:3px solid var(--ng-line)}

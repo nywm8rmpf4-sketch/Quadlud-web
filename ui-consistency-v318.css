@@ -1,0 +1,51 @@
+/*
+ * QUADLUD — v3.1.8-U14 cross-device / cross-game UI coherence contract
+ * Copyright © 2026 Serge Benoliel
+ * All rights reserved.
+ */
+
+/* The smartphone normal-game action set is canonical for every game and
+   viewport. Solution and Techniques remain implementation capabilities but
+   are not part of the canonical in-game action bar. Special-context actions
+   (training/challenge) keep their own explicit lifecycle rules. */
+.toolbar #solutionBtn,
+.toolbar #techniquesBtn{
+  display:none!important;
+}
+
+/* Visual order is part of the generic contract. Explicit orders deliberately
+   win over historical game-local rules (notably Rectangles) so DOM and visual
+   reading order cannot drift between games or devices. */
+.toolbar #newBtn{order:1!important}
+.toolbar #resetBtn{order:2!important}
+.toolbar #undoBtn{order:3!important}
+.toolbar #redoBtn{order:4!important}
+.toolbar #hintBtn{order:5!important}
+.toolbar #walkthroughBtn{order:6!important}
+.toolbar #rulesBtn{order:7!important}
+
+/* Phone portrait invariant: row 1 = New / Reset / Undo / Redo.
+   Logic Coach must therefore begin row 2, followed by Tutor and Rules.
+   This rule intentionally overrides the historical five-column mobile grid. */
+@media (max-width:520px) and (orientation:portrait){
+  .panel .toolbar{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+  }
+}
+
+/* On iPad/desktop landscape the Coach owns the free rail to the left of the
+   board instead of covering the play surface. Geometry is calculated from
+   the live panel/board rectangles by ui-consistency-v318.js. */
+@media (orientation:landscape) and (min-width:700px) and (min-height:521px){
+  .hint-notice.coach-docked-wide{
+    margin:0;
+    bottom:auto;
+    transform:none;
+    max-width:none;
+    overflow:auto;
+    overscroll-behavior:contain;
+  }
+  .hint-notice.coach-docked-wide .hint-drag-handle{
+    display:none;
+  }
+}

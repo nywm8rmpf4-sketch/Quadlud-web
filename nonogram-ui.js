@@ -70,25 +70,45 @@ function createAdapter(deps){
     if(!clues.length)return `<span class="ng-clue-token" data-entity-kind="clue" data-entity-id="${Logic.clueId(axis,lineIndex,0)}" aria-label="${labels.noBlock}">0</span>`;
     return clues.map((v,i)=>`<span class="ng-clue-token" data-entity-kind="clue" data-entity-id="${Logic.clueId(axis,lineIndex,i)}">${v}</span>`).join('')
   }
-  function content(session){
+  function tutorFocusRoles(deduction,puzzle){
+    const roles=new Map(),focus=Array.isArray(deduction?.move?.focus)?deduction.move.focus:[];
+    for(const item of focus){
+      const e=item?.entity;if(e?.kind==='cell')roles.set(e.id,item.role);
+      else if(e?.kind==='row'){const m=/^r(\d+)$/.exec(e.id);if(m)for(let c=0;c<puzzle.cols;c++)if(!roles.has(Logic.cellId(Number(m[1]),c)))roles.set(Logic.cellId(Number(m[1]),c),'context')}
+      else if(e?.kind==='column'){const m=/^c(\d+)$/.exec(e.id);if(m)for(let r=0;r<puzzle.rows;r++)if(!roles.has(Logic.cellId(r,Number(m[1]))))roles.set(Logic.cellId(r,Number(m[1])),'context')}
+    }
+    return roles
+  }
+  function readOnlyCells(session,deduction){
+    const p=session.puzzle,roles=tutorFocusRoles(deduction,p),cells=[];
+    for(let r=0;r<p.rows;r++)for(let c=0;c<p.cols;c++){
+      const id=Logic.cellId(r,c),v=session.state[r][c],role=roles.get(id),cls=['cell','walkthrough-cell','ng-cell'];
+      if(role==='target')cls.push('walkthrough-target');else if(role)cls.push('walkthrough-context');
+      if(v===Logic.FILLED)cls.push('ng-filled');else if(v===Logic.EMPTY)cls.push('ng-empty');else cls.push('ng-unknown');
+      if((c+1)%5===0&&c<p.cols-1)cls.push('ng-group-right');if((r+1)%5===0&&r<p.rows-1)cls.push('ng-group-bottom');
+      cells.push(`<div class="${cls.join(' ')}" data-r="${r}" data-c="${c}" data-coordinate="${GridCoordinates.coordinateLabel(r,c)}" data-entity-kind="cell" data-entity-id="${id}" data-state="${Logic.STATE_NAMES[v]}">${v===Logic.EMPTY?'×':''}</div>`)
+    }
+    return cells.join('')
+  }
+  function content(session,{readOnly=false,deduction=null}={}){
     const p=session.puzzle,rows=p.rows,cols=p.cols;
     const colCoords=Array.from({length:cols},(_,c)=>`<span>${GridCoordinates.columnLabel(c)}</span>`).join('');
     const rowCoords=Array.from({length:rows},(_,r)=>`<span>${GridCoordinates.rowLabel(r)}</span>`).join('');
     const colClues=p.colClues.map((clues,c)=>`<div class="ng-col-clue" id="${clueDomId('col',c)}" role="columnheader" aria-label="${labels.columnClue} ${GridCoordinates.columnLabel(c)}: ${displayClue(clues)}" data-entity-kind="column" data-entity-id="${Logic.columnId(c)}">${clueTokens('column',c,clues)}</div>`).join('');
     const rowClues=p.rowClues.map((clues,r)=>`<div class="ng-row-clue" id="${clueDomId('row',r)}" role="rowheader" aria-label="${labels.rowClue} ${GridCoordinates.rowLabel(r)}: ${displayClue(clues)}" data-entity-kind="row" data-entity-id="${Logic.rowId(r)}">${clueTokens('row',r,clues)}</div>`).join('');
-    return `<div class="nonogram-game" data-ng-size="${rows}x${cols}" data-product-size-enabled="${isProductSizeEnabled(rows)&&rows===cols?'true':'false'}">
-      <div class="nonogram-tools" role="toolbar" aria-label="${labels.tools}">
+    return `<div class="nonogram-game${readOnly?' nonogram-tutor-board':''}" data-ng-size="${rows}x${cols}" data-product-size-enabled="${isProductSizeEnabled(rows)&&rows===cols?'true':'false'}"${readOnly?' data-nonogram-tutor="readonly"':''}>
+      ${readOnly?'':`<div class="nonogram-tools" role="toolbar" aria-label="${labels.tools}">
         <button class="btn ng-tool" id="ngFillMode" type="button" aria-pressed="true" aria-keyshortcuts="F 1">■ ${labels.fill}</button>
         <button class="btn ng-tool" id="ngCrossMode" type="button" aria-pressed="false" aria-keyshortcuts="X 2">× ${labels.cross}</button>
         <button class="btn ng-tool" id="ngEraseMode" type="button" aria-pressed="false" aria-keyshortcuts="E Delete Backspace 0">⌫ ${labels.erase}</button>
-      </div>
+      </div>`}
       <div class="nonogram-layout" style="--ng-cols:${cols};--ng-rows:${rows}">
         <div class="ng-grid-column-coordinates" aria-hidden="true">${colCoords}</div>
         <div class="ng-grid-row-coordinates" aria-hidden="true">${rowCoords}</div>
         <div class="ng-corner" aria-hidden="true"></div>
         <div class="ng-col-clues">${colClues}</div>
         <div class="ng-row-clues">${rowClues}</div>
-        <div class="board nonogram-board" id="ngboard"></div>
+        <div class="board nonogram-board${readOnly?' walkthrough-board':''}" id="ngboard"${readOnly?' data-nonogram-tutor-board="readonly"':''}>${readOnly?readOnlyCells(session,deduction):''}</div>
       </div>
     </div>`
   }
@@ -114,6 +134,11 @@ function createAdapter(deps){
     shell(name,`${p.rows}×${p.cols}${diff?` · ${diff}`:''}`,session.diff,content(session),rules);
     buildCells(session);query('#ngFillMode').onclick=()=>setMode(MODES.FILL);query('#ngCrossMode').onclick=()=>setMode(MODES.CROSS);query('#ngEraseMode').onclick=()=>setMode(MODES.ERASE);const hintButton=query('#hintBtn');if(hintButton&&hint)hintButton.onclick=hint;draw();return query('#ngboard')
   }
+  function walkthroughBoard({base,snapshot,deduction}={}){
+    if(!base?.puzzle||!snapshot?.state)return null;
+    const puzzle=Logic.validatePuzzle(base.puzzle),state=Logic.validateState(puzzle,snapshot.state),session={...base,puzzle,state};
+    return {html:`<div class="walkthrough-board-wrap nonogram-walkthrough-wrap">${content(session,{readOnly:true,deduction})}</div>`}
+  }
   function resolveEntity(entity){const selector=entitySelector(entity);return selector?query(selector):null}
   function clearEntityFocus(){const scope=query('.nonogram-game');if(!scope)return;for(const cls of FOCUS_CLASSES)scope.querySelectorAll?.(`.${cls}`)?.forEach(el=>el.classList.remove(cls))}
   function focusEntities(focus){
@@ -123,7 +148,7 @@ function createAdapter(deps){
   }
   function keyboardInput(event){const cell=document.activeElement?.closest?.('#ngboard .cell');if(!cell)return false;const key=String(event.key||'').toLowerCase();if(key==='f'||key==='1'){setMode(MODES.FILL);return true}if(key==='x'||key==='2'){setMode(MODES.CROSS);return true}if(key==='e'||key==='0'){setMode(MODES.ERASE);return true}return false}
 
-  return Object.freeze({render,draw,reset,syncAccessibility,resolveEntity,focusEntities,keyboardInput,setMode,getMode:()=>mode,applyAt,isProductSizeEnabled})
+  return Object.freeze({render,draw,reset,walkthroughBoard,syncAccessibility,resolveEntity,focusEntities,keyboardInput,setMode,getMode:()=>mode,applyAt,isProductSizeEnabled})
 }
 
 return Object.freeze({VERSION,PRODUCT_SIZES,MODES,DEFAULT_LABELS,isProductSizeEnabled,parseCellEntity,entitySelector,createAdapter});

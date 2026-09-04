@@ -84,6 +84,19 @@
 
     function reset(session=getCurrent()){if(!session||session.game!=='sudoku')return false;session.sel=null;return draw()}
 
+    function walkthroughBoard({initial,snapshot,target,deduction}={}){
+      if(!snapshot?.state)return null;
+      const targetKey=target?target.join(','):null,context=new Set((deduction?.focusCells||[]).map(cell=>cell.join(','))),cells=[];
+      for(let r=0;r<6;r++)for(let c=0;c<6;c++){
+        const key=`${r},${c}`,value=snapshot.state[r][c],fixed=initial?.state?.[r]?.[c]!==0,classes=['cell','walkthrough-cell'];
+        if(fixed)classes.push('fixed');if(c===2)classes.push('boxR');if(r===1||r===3)classes.push('boxB');
+        if(context.has(key)&&targetKey!==key)classes.push('walkthrough-context');if(targetKey===key)classes.push('walkthrough-target');
+        cells.push(`<div class="${classes.join(' ')}" data-r="${r}" data-c="${c}" data-coordinate="${GridCoordinates.coordinateLabel(r,c)}">${value||''}</div>`)
+      }
+      const boardHtml=`<div class="board sudoku walkthrough-board" data-sudoku-tutor="readonly" style="grid-column:2;grid-row:2;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))">${cells.join('')}</div>`;
+      return {html:GridCoordinates.markup(6,6,{className:'walkthrough-board-wrap board-wrap grid-coordinate-wrap sudoku-coordinate-wrap',columnClass:'sudoku-column-coordinates',rowClass:'sudoku-row-coordinates',boardHtml})}
+    }
+
     function revealSolution(){
       if(isPaused())return;
       const current=getCurrent();
@@ -127,7 +140,7 @@
       return true
     }
 
-    return Object.freeze({render,draw,reset,keyboardInput,syncAccessibility})
+    return Object.freeze({render,draw,reset,walkthroughBoard,keyboardInput,syncAccessibility})
   }
 
   return Object.freeze({createAdapter})

@@ -20,6 +20,7 @@
   border-right-color:var(--patch-grid-line);
   border-bottom-color:var(--patch-grid-line);
 }
+#pboard .patch-cell{background:var(--patch-fill,#fff)}
 #pboard .patch-cell.clue{background:var(--patch-fill,#fff)}
 #pboard .patch-cell::after{
   border-color:rgba(30,32,29,.86);
@@ -215,4 +216,3 @@
   box-shadow:none!important;
   color:#fff1f1;
 }
-
