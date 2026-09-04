@@ -1,0 +1,43 @@
+name: Promote certified v3.1.8
+
+on:
+  push:
+    paths:
+      - '.github/workflows/promote-v318.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Quadlud-web
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Fetch certified runtime snapshot
+        run: |
+          git clone --quiet https://github.com/nywm8rmpf4-sketch/Quadlud-test.git /tmp/quadlud-test
+          git -C /tmp/quadlud-test checkout --quiet 0dcd89b288db686116902a52f599bb63f278d686
+      - name: Promote runtime root only
+        run: |
+          find . -maxdepth 1 -type f -delete
+          find /tmp/quadlud-test -maxdepth 1 -type f ! -name '.gitignore' -exec cp '{}' . ';'
+      - name: Verify runtime tree
+        run: |
+          tmp=$(mktemp -d)
+          find . -maxdepth 1 -type f -exec cp '{}' "$tmp/" ';'
+          git -C "$tmp" init -q
+          git -C "$tmp" add .
+          tree=$(git -C "$tmp" write-tree)
+          test "$tree" = 'a73e712ef0d847ad957bff15e1714503e1c93348'
+      - name: Commit promotion
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m 'release: publish certified QUADLUD v3.1.8'
+          git push origin HEAD:main
